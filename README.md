@@ -1,7 +1,7 @@
 ```
 ┌──────────────────────────────────────────────────────────────┐
 │                                                              │
-│   / someone                                                  │
+│   / shiemi                                                   │
 │                                                              │
 │   you're someone, not a datapoint                            │
 │                                                              │
@@ -13,12 +13,12 @@
 
   a chromium browser
   no ads, no tracking, no telemetry
-  someo.ne
+  shiemi.com
 
 > status?
 
   early — not built yet
-  → someo.ne
+  → shiemi.com
 
 > stack?
 
