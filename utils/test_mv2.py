@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Prove a Manifest V2 content blocker can still block a request.
 
-  python3 utils/test_mv2.py
+  python3 utils/test_mv2.py --headless
   python3 utils/test_mv2.py --keep-open
 
 Manifest V3 removes blocking webRequest, which is the capability every content
@@ -75,6 +75,8 @@ def main() -> int:
     parser.add_argument("--binary", type=Path, default=DEFAULT_BINARY)
     parser.add_argument("--keep-open", action="store_true",
                         help="leave the browser running to inspect by hand")
+    parser.add_argument("--headless", action="store_true",
+                        help="run without opening a window")
     args = parser.parse_args()
 
     if not args.binary.exists():
@@ -94,6 +96,7 @@ def main() -> int:
         f"--load-extension={EXTENSION}",
         "--no-first-run",
         "--no-default-browser-check",
+        *(["--headless"] if args.headless else []),
         "about:blank",
     ])
 
