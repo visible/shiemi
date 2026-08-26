@@ -1,0 +1,58 @@
+/* The only styles that apply everywhere. The landing page loads its own sheet
+   on top, so a second page can arrive later without having to undo this one. */
+
+:root {
+  /* Near black rather than black, warmed very slightly. Pure #000 on a modern
+     panel reads as a hole in the screen and makes the type edges buzz; a hair
+     of lift keeps the surface flat and lets grey sit on it calmly. */
+  --ground: #0d0d0c;
+  --ground-2: #141413;
+  --ink: #ecebe8;
+  --ink-2: #9a9893;
+  --ink-3: #625f5a;
+  --rule: #232321;
+  --rule-2: #33322f;
+  /* One accent, spent in exactly one place: the single mark in the field that
+     is a person rather than a reading. Everything else on the site is grey. */
+  --accent: #d2703f;
+
+  /* Whatever the reader already has. Nothing is fetched. */
+  --sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    Roboto, Helvetica, Arial, sans-serif;
+  --mono: ui-monospace, 'SFMono-Regular', 'Cascadia Mono', Menlo, Consolas,
+    monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scrollbar-gutter: stable;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  color: inherit;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--ground);
+}
+
+:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 3px;
+}

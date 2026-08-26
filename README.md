@@ -15,14 +15,21 @@
 > stack?
 
   chromium · c++ · gn · ninja
+  next.js · typescript          the site
 
 > build?
 
-  needs depot_tools and a chromium checkout
-  set SHIEMI_CHROMIUM_SRC to point at it
+  the browser needs depot_tools and a
+  chromium checkout — point
+  SHIEMI_CHROMIUM_SRC at it
 
   python3 utils/patches.py apply
   python3 utils/build.py
+
+  the site lives in apps/web
+
+  bun install
+  bun run web
 
 > license?
 

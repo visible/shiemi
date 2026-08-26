@@ -1,0 +1,129 @@
+/* One screen, one claim, centred. Nothing frames it. */
+.page {
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  padding: 48px clamp(20px, 5vw, 64px);
+}
+
+.stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 26px;
+}
+
+/* A field of identical readings, and one that is a person.
+
+   The grid is a background rather than a few hundred elements, so it costs one
+   paint and no markup. The mask fades it out well before the edges, which stops
+   it reading as a texture that got clipped by the viewport and keeps the eye on
+   the one dot that is a different colour. */
+.field {
+  position: relative;
+  width: 100%;
+  max-width: 460px;
+  height: 156px;
+  background-image: radial-gradient(var(--ink-3) 1px, transparent 1.5px);
+  background-size: 19px 19px;
+  background-position: center;
+  -webkit-mask-image: radial-gradient(ellipse at center, #000 26%, transparent 70%);
+  mask-image: radial-gradient(ellipse at center, #000 26%, transparent 70%);
+}
+
+.you {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 7px;
+  height: 7px;
+  margin: -3.5px 0 0 -3.5px;
+  border-radius: 50%;
+  background: var(--accent);
+  /* The ground colour, not transparency: it punches a hole in the grid so the
+     neighbouring dots do not crowd the one that matters. */
+  box-shadow: 0 0 0 7px var(--ground);
+}
+
+h1 {
+  margin: 0;
+  max-width: 22ch;
+  font-size: clamp(30px, 6.4vw, 56px);
+  font-weight: 400;
+  line-height: 1.06;
+  letter-spacing: -0.03em;
+  /* Left alone this breaks after "not a" and hangs one word on its own line.
+     Balancing splits it at the comma instead, which is where the sentence
+     already pauses. */
+  text-wrap: balance;
+}
+
+.lede {
+  margin: 0;
+  max-width: 46ch;
+  font-size: clamp(14px, 1.6vw, 16px);
+  line-height: 1.6;
+  color: var(--ink-2);
+  /* Short enough that balancing beats leaving a three-word last line. */
+  text-wrap: balance;
+}
+
+/* Pinned to the right margin and vertically centred. Fixed rather than in the
+   flow so it does not widen the stage or pull the heading off centre. */
+.rail {
+  position: fixed;
+  top: 50%;
+  right: clamp(20px, 5vw, 64px);
+  transform: translateY(-50%);
+  display: grid;
+  gap: clamp(20px, 3vh, 30px);
+  justify-items: center;
+}
+
+.rail a {
+  display: grid;
+  place-items: center;
+  width: 19px;
+  height: 19px;
+  color: var(--ink-3);
+  transition: color 200ms ease, transform 200ms ease;
+}
+
+.rail a:hover {
+  color: var(--ink);
+  transform: translateY(-2px);
+}
+
+.rail svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Vertically centred, the rail would sit beside the heading on a narrow screen
+   and crowd it. Moving it to the top right corner clears the stage entirely. */
+@media (max-width: 640px), (max-height: 520px) {
+  .rail {
+    top: clamp(20px, 4vh, 30px);
+    transform: none;
+    grid-auto-flow: column;
+    gap: 20px;
+  }
+}
+
+@media (max-width: 560px) {
+  .field {
+    height: 118px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rail a {
+    transition: none;
+  }
+
+  .rail a:hover {
+    transform: none;
+  }
+}

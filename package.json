@@ -1,0 +1,21 @@
+{
+  "name": "shiemi",
+  "version": "0.1.0",
+  "description": "a chromium browser",
+  "private": true,
+  "type": "module",
+  "license": "GPL-3.0",
+  "homepage": "https://shiemi.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/visible/shiemi.git"
+  },
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "web": "bun run --filter '@shiemi/web' dev",
+    "web:build": "bun run --filter '@shiemi/web' build",
+    "typecheck": "bun run --filter '@shiemi/web' typecheck"
+  }
+}
