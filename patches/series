@@ -7,3 +7,4 @@
 # instead.
 
 branding/product-identity.patch
+extensions/manifest-v2-support.patch

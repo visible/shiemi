@@ -1,0 +1,15 @@
+{
+  "manifest_version": 2,
+  "name": "mv2 support check",
+  "version": "1.0",
+  "description": "Loads only if Manifest V2 support is intact.",
+  "permissions": [
+    "webRequest",
+    "webRequestBlocking",
+    "<all_urls>"
+  ],
+  "background": {
+    "scripts": ["background.js"],
+    "persistent": true
+  }
+}

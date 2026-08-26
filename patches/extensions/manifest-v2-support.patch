@@ -1,0 +1,31 @@
+diff --git a/extensions/browser/manifest_v2_handler.cc b/extensions/browser/manifest_v2_handler.cc
+index 9f7c55596044b..59edb8bea5e64 100644
+--- a/extensions/browser/manifest_v2_handler.cc
++++ b/extensions/browser/manifest_v2_handler.cc
+@@ -113,7 +113,12 @@ bool ShouldDisableLegacyExtensions() {
+     return false;
+   }
+ 
+-  return true;
++  // Manifest V2 is not deprecated here. Upstream still compiles every MV2
++  // code path and routes all enforcement through this one function, so
++  // returning false restores installing, enabling and loading MV2
++  // extensions. Content blockers that need blocking webRequest, rather than
++  // the capped declarativeNetRequest rule set, depend on this.
++  return false;
+ }
+ 
+ }  // namespace
+@@ -145,6 +150,12 @@ BrowserContextKeyedServiceFactory* ManifestV2Handler::GetFactory() {
+ }
+ 
+ bool ManifestV2Handler::IsExtensionAffected(const Extension& extension) {
++  // Nothing is affected by a deprecation that is not happening. Without this
++  // the extensions page keeps warning that working extensions are unsupported.
++  if (!ShouldDisableLegacyExtensions()) {
++    return false;
++  }
++
+   return impact_checker_.IsExtensionAffected(extension);
+ }
+ 
