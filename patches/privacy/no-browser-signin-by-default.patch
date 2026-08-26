@@ -1,17 +1,15 @@
 diff --git a/chrome/browser/signin/account_consistency_mode_manager.cc b/chrome/browser/signin/account_consistency_mode_manager.cc
-index f11db47c92ff8..acdbe725442b7 100644
+index f11db47c92ff8..a40216a8081fb 100644
 --- a/chrome/browser/signin/account_consistency_mode_manager.cc
 +++ b/chrome/browser/signin/account_consistency_mode_manager.cc
-@@ -146,7 +146,12 @@ AccountConsistencyModeManager::~AccountConsistencyModeManager() = default;
+@@ -146,7 +146,10 @@ AccountConsistencyModeManager::~AccountConsistencyModeManager() = default;
  // static
  void AccountConsistencyModeManager::RegisterProfilePrefs(
      user_prefs::PrefRegistrySyncable* registry) {
 -  registry->RegisterBooleanPref(prefs::kSigninAllowedOnNextStartup, true);
-+  // Browser sign-in is off by default. Leaving it on makes the browser call
-+  // accounts.google.com/ListAccounts to mirror Google cookie state even for a
-+  // user who never signs in, and sync cannot work anyway without Google API
-+  // keys compiled in. This is a pref rather than a hard-coded mode so the
-+  // choice stays reversible.
++  // Sign-in is off by default: it cannot work without Google API keys compiled
++  // in, and leaving it on turns on Dice account consistency. A pref rather than
++  // a hard-coded mode keeps the choice reversible.
 +  registry->RegisterBooleanPref(prefs::kSigninAllowedOnNextStartup, false);
  }
  
