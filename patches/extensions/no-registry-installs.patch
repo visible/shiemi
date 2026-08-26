@@ -1,0 +1,49 @@
+diff --git a/chrome/browser/extensions/external_provider_impl.cc b/chrome/browser/extensions/external_provider_impl.cc
+index 074cfef37f0b0..68e2d8424aef8 100644
+--- a/chrome/browser/extensions/external_provider_impl.cc
++++ b/chrome/browser/extensions/external_provider_impl.cc
+@@ -15,6 +15,7 @@
+ 
+ #include "base/check.h"
+ #include "base/command_line.h"
++#include "base/feature_list.h"
+ #include "base/files/file_path.h"
+ #include "base/logging.h"
+ #include "base/memory/scoped_refptr.h"
+@@ -96,6 +97,15 @@ namespace extensions {
+ 
+ namespace {
+ 
++#if BUILDFLAG(IS_WIN)
++// Whether extensions registered under Software\Google\Chrome\Extensions may
++// install themselves. Any installer on the machine can write that key, so
++// leaving it on lets unrelated software add extensions without being asked.
++BASE_FEATURE(kExternalExtensionsFromRegistry,
++             "ExternalExtensionsFromRegistry",
++             base::FEATURE_DISABLED_BY_DEFAULT);
++#endif
++
+ #if BUILDFLAG(IS_CHROMEOS)
+ 
+ const char kCameraAppId[] = "hfhhnacclhffhdffklopdkcgdhifgngh";
+@@ -848,12 +858,14 @@ void ExternalProviderImpl::CreateExternalProviders(
+         bundled_extension_creation_flags));
+ #endif
+ #if BUILDFLAG(IS_WIN)
+-    auto registry_provider = std::make_unique<ExternalProviderImpl>(
+-        service, new ExternalRegistryLoader, profile,
+-        ManifestLocation::kExternalRegistry,
+-        ManifestLocation::kExternalPrefDownload, Extension::NO_FLAGS);
+-    registry_provider->set_allow_updates(true);
+-    provider_list->push_back(std::move(registry_provider));
++    if (base::FeatureList::IsEnabled(kExternalExtensionsFromRegistry)) {
++      auto registry_provider = std::make_unique<ExternalProviderImpl>(
++          service, new ExternalRegistryLoader, profile,
++          ManifestLocation::kExternalRegistry,
++          ManifestLocation::kExternalPrefDownload, Extension::NO_FLAGS);
++      registry_provider->set_allow_updates(true);
++      provider_list->push_back(std::move(registry_provider));
++    }
+ #else
+     provider_list->push_back(std::make_unique<ExternalProviderImpl>(
+         service,
