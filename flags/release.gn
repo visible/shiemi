@@ -1,0 +1,30 @@
+# Shipping build. Optimised for runtime, expensive to compile.
+#
+# gn resolves this configuration against Chromium 151, but it has not been
+# compiled end to end yet. PGO requires "checkout_pgo_profiles": True in the
+# .gclient custom_vars, followed by gclient runhooks, or gn fails outright.
+
+is_debug = false
+is_component_build = false
+
+# Full optimisation, LTO and profile-guided optimisation.
+is_official_build = true
+
+# Without these, H.264 and AAC are absent and most video on the web fails.
+proprietary_codecs = true
+ffmpeg_branding = "Chrome"
+
+# Google's field trial config changes behaviour based on remote state.
+disable_fieldtrial_testing_config = true
+
+# safe_browsing_mode = 0 does not work on its own: several chrome/ targets
+# still depend on the components it removes, and gn fails with unresolved
+# dependencies. Cutting Safe Browsing's phone-home therefore needs a patch,
+# not a flag. Tracked as privacy work; left at the default until then.
+
+use_remoteexec = false
+treat_warnings_as_errors = false
+
+# Performance work goes here once there are benchmark numbers to justify it.
+# An AVX2 baseline is the first candidate: stock Chrome targets SSE3 for
+# compatibility with 2005-era CPUs, which we do not need to support.

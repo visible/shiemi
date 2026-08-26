@@ -1,0 +1,21 @@
+# Fast-iteration build. Optimised for compile time, not runtime.
+# Use this while developing patches.
+#
+# Validated: this exact configuration built Chromium 151.0.7922.174
+# successfully on Windows.
+
+is_debug = false
+is_component_build = false
+
+# Symbols dominate link time and nothing here is being debugged yet.
+symbol_level = 0
+blink_symbol_level = 0
+v8_symbol_level = 0
+
+# PGO instrumentation roughly triples build time.
+chrome_pgo_phase = 0
+
+# Remote execution is unavailable to external contributors on Windows.
+use_remoteexec = false
+
+treat_warnings_as_errors = false

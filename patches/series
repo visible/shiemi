@@ -1,0 +1,7 @@
+# Patches applied to a pristine Chromium checkout, in this order.
+# One path per line, relative to patches/. Blank lines and # are ignored.
+#
+# Keep this list short. Every entry has to be re-based onto a new Chromium
+# roughly every four weeks, and that cost scales with the count. Before
+# adding one, check whether a GN argument or an extension can do the job
+# instead.

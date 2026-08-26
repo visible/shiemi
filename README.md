@@ -17,12 +17,20 @@
 
 > status?
 
-  early — not built yet
+  early — baseline builds, no patches yet
   → shiemi.com
 
 > stack?
 
   chromium · c++ · gn · ninja
+
+> build?
+
+  needs depot_tools and a chromium checkout
+  set SHIEMI_CHROMIUM_SRC to point at it
+
+  python3 utils/patches.py apply
+  python3 utils/build.py --flags dev
 
 > license?
 
