@@ -15,6 +15,7 @@ import subprocess
 import sys
 
 import config
+import rebrand
 
 
 def run(cmd: str, cwd) -> int:
@@ -75,6 +76,10 @@ def main() -> int:
     written = overlay_branding(src)
     if written:
         print(f"branding {written} asset(s) copied into the tree")
+
+    renamed = rebrand.apply(src)
+    if renamed:
+        print(f"strings  {renamed} message(s) rebranded")
 
     # Not --args: cmd.exe eats the quotes in gn string values.
     out_path.mkdir(parents=True, exist_ok=True)

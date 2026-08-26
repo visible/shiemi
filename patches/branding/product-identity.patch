@@ -1,20 +1,3 @@
-diff --git a/chrome/app/chromium_strings.grd b/chrome/app/chromium_strings.grd
-index 12a62d6803668..55fb3f43e6b75 100644
---- a/chrome/app/chromium_strings.grd
-+++ b/chrome/app/chromium_strings.grd
-@@ -294,10 +294,10 @@ If you update this file, be sure also to update google_chrome_strings.grd. -->
-         </then>
-         <else>
-           <message name="IDS_PRODUCT_NAME" desc="The Chrome application name" translateable="false">
--            Chromium
-+            shiemi
-           </message>
-           <message name="IDS_SHORT_PRODUCT_NAME" desc="The Chrome application short name." translateable="false">
--            Chromium
-+            shiemi
-           </message>
-         </else>
-       </if>
 diff --git a/chrome/app/theme/chromium/BRANDING b/chrome/app/theme/chromium/BRANDING
 index f8363d5b294fe..5f840b2740cf5 100644
 --- a/chrome/app/theme/chromium/BRANDING
