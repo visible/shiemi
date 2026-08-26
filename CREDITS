@@ -1,14 +1,25 @@
-shiemi is built on Chromium.
+shiemi is licensed under GPL-3.0. See LICENSE.
+
+Everything original to this repository - the patches, the GN argument files,
+the build and measurement tooling - is GPL-3.0. Code that arrived from another
+project keeps the licence it came with and is listed below.
 
 Chromium
   https://chromium.googlesource.com/chromium/src
   Copyright 2015 The Chromium Authors
   BSD-3-Clause
 
-Patches under patches/ that are original to this project carry this
-repository's licence. Any patch adapted from another project keeps its
-original licence and must be listed below with its source and terms.
-Removing attribution to keep branding clean is a licence violation.
+Chromium is a build input rather than part of this repository. Its
+BSD-3-Clause terms are GPL-compatible, so the two combine cleanly, and a
+binary built from here ships under GPL-3.0 as a whole. That carries an
+obligation: the binary has to be accompanied by the complete corresponding
+source. This repository plus the version pinned in chromium_version.txt is
+that source, which is why the pin has to stay honest.
+
+Patches under patches/ that are original to this project are GPL-3.0. Any
+patch adapted from another project keeps its original licence and must be
+listed below with its source and terms. Removing attribution to keep branding
+clean is a licence violation.
 
 Third-party patches
   (none yet)

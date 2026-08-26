@@ -17,7 +17,7 @@
 
 > status?
 
-  early — baseline builds, no patches yet
+  early — patched builds, not released
   → shiemi.com
 
 > stack?
@@ -34,5 +34,5 @@
 
 > license?
 
-  bsd-3-clause
+  gpl-3.0
 ```
