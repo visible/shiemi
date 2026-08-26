@@ -1,10 +1,6 @@
-/* The only styles that apply everywhere. The landing page loads its own sheet
-   on top, so a second page can arrive later without having to undo this one. */
-
 :root {
-  /* Near black rather than black, warmed very slightly. Pure #000 on a modern
-     panel reads as a hole in the screen and makes the type edges buzz; a hair
-     of lift keeps the surface flat and lets grey sit on it calmly. */
+  /* Pure #000 makes type edges buzz on a modern panel; a hair of lift keeps
+     the surface flat. */
   --ground: #0d0d0c;
   --ground-2: #141413;
   --ink: #ecebe8;
@@ -12,11 +8,9 @@
   --ink-3: #625f5a;
   --rule: #232321;
   --rule-2: #33322f;
-  /* One accent, spent in exactly one place: the single mark in the field that
-     is a person rather than a reading. Everything else on the site is grey. */
+  /* Used in exactly one place. Everything else on the site is grey. */
   --accent: #d2703f;
 
-  /* Whatever the reader already has. Nothing is fetched. */
   --sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
     Roboto, Helvetica, Arial, sans-serif;
   --mono: ui-monospace, 'SFMono-Regular', 'Cascadia Mono', Menlo, Consolas,

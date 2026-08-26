@@ -10,8 +10,6 @@ export default function Home() {
   return (
     <main className="page">
       <div className="stage">
-        {/* The claim, stated rather than written. A grid of identical readings
-            with one mark in it that is a person. */}
         <div className="field" aria-hidden="true">
           <span className="you" />
         </div>
@@ -24,8 +22,6 @@ export default function Home() {
         </p>
       </div>
 
-      {/* Icons rather than words: at this size words would need a legibility
-          the margin will not give them, so the label lives in aria-label. */}
       <nav className="rail" aria-label="elsewhere">
         <a href={REPO} rel="noopener" aria-label="Source on GitHub" title="GitHub">
           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">

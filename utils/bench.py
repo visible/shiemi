@@ -31,15 +31,10 @@ import config
 
 DEFAULT_BINARY = config.CHROMIUM_SRC / "out" / "baseline" / "chrome.exe"
 
-# A fresh profile otherwise opens with first-run bubbles and a search engine
-# picker, either of which would land in a paint timing.
-#
-# The backgrounding flags are not cosmetic. A window that never comes to the
-# foreground has its renderer dropped to background priority, and on a loaded
-# machine that renderer can stop being scheduled altogether: browser-process
-# calls still answer instantly while anything needing the renderer hangs
-# indefinitely. Timing a throttled renderer would measure the scheduler
-# anyway, not the browser.
+# First-run bubbles and the search picker would land in a paint timing. The
+# backgrounding flags are required, not cosmetic: an unfocused window's
+# renderer can stop being scheduled entirely, which hangs every call that
+# needs it.
 COMMON_FLAGS = [
     "--no-first-run",
     "--no-default-browser-check",
@@ -50,11 +45,9 @@ COMMON_FLAGS = [
     "--disable-background-timer-throttling",
 ]
 
-# Copying a profile has to skip the volatile parts. Cache files stay mapped
-# for a moment after the browser dies, so copying them fails with a sharing
-# violation, and a copied singleton marker would make the new profile look
-# occupied. Leaving all of it out also hands every run an identical empty
-# cache, which is one less thing to vary between measurements.
+# Cache files stay mapped after the browser dies, so copying them fails with a
+# sharing violation, and a copied singleton marker makes the profile look
+# occupied. Skipping them also gives every run an identical empty cache.
 VOLATILE = shutil.ignore_patterns(
     "Cache", "Code Cache", "GPUCache", "DawnCache", "DawnGraphiteCache",
     "DawnWebGPUCache", "ShaderCache", "GrShaderCache", "Crashpad",
@@ -68,10 +61,9 @@ STARTUP_PAGE = """<!doctype html>
 <h1>paint</h1>
 """
 
-# Selectors are the fragile part: browserbench rewrites its markup between
-# releases, and a harness that silently reports nothing is worse than one that
-# fails loudly. Each expression returns a number once the run is finished and
-# null while it is still going, so the poll loop needs no other signal.
+# Selectors break when browserbench rewrites its markup. Each expression
+# returns a number when the run finishes and null while it is going, which is
+# the only signal the poll loop gets.
 WEB_BENCHMARKS = {
     "speedometer": {
         "url": "https://browserbench.org/Speedometer3.1/?startAutomatically=true",
@@ -151,9 +143,8 @@ def tree_pids(rows, root_pid: int) -> set:
 def tree_memory_bytes(root_pid: int) -> int:
     """Summed working set of the browser and everything it spawned.
 
-    Pages shared between processes are counted once per process, so this reads
-    high as an absolute figure. It is still the right number for comparing two
-    builds of the same browser, which is all it is used for.
+    Shared pages are counted once per process, so this reads high in absolute
+    terms but still compares two builds fairly.
     """
     rows = process_rows()
     wanted = tree_pids(rows, root_pid)
@@ -163,8 +154,8 @@ def tree_memory_bytes(root_pid: int) -> int:
 def kill_tree(proc: subprocess.Popen) -> None:
     """Kill the browser and wait for its renderers to actually be gone.
 
-    Killing only the parent leaves the renderers running, and taskkill returns
-    before the tree has finished dying either way.
+    Killing the parent alone leaves renderers running, and taskkill returns
+    before the tree has died.
     """
     doomed = tree_pids(process_rows(), proc.pid) or {proc.pid}
     if sys.platform == "win32":
@@ -209,12 +200,9 @@ class Browser:
 def make_template(binary: Path, workspace: Path) -> Path:
     """A profile that has already been through first run.
 
-    Timed launches get a copy of this rather than sharing one directory. A
-    shared directory does not survive the kill between runs: the profile still
-    looks occupied for a moment afterwards, so the next launch hands its
-    command line to the instance it thinks is alive and exits without ever
-    opening DevTools. Copying also keeps first-run setup out of the first
-    measurement.
+    Runs get a copy, not a shared directory: a just-killed profile still looks
+    occupied, so the next launch hands off to the instance it thinks is alive
+    and exits without opening DevTools.
     """
     template = workspace / "template"
     browser = Browser(binary, template, ["about:blank"])
@@ -251,13 +239,9 @@ def new_workspace() -> Path:
 def measure_startup(binary: Path, runs: int) -> list:
     """Wall time from spawning the process to the first pixels of a page.
 
-    Both ends are read as an absolute instant rather than by polling, so how
-    fast this script reacts does not enter the measurement: the page reports
-    performance.timeOrigin plus the paint offset, on the same clock the launch
-    time was taken from.
-
-    This is a warm start. A genuinely cold one needs the file cache emptied,
-    which means rebooting between runs, so this measures the everyday case.
+    Both ends are absolute instants on the same clock, so this script's own
+    latency stays out of the number. Warm start: a cold one needs the file
+    cache emptied, which means rebooting between runs.
     """
     workspace = new_workspace()
     page = workspace / "startup.html"

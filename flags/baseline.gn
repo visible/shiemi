@@ -1,10 +1,9 @@
 # The standard build: patches applied, optimised for compile time rather than
 # runtime. This is the one to use while developing patches.
 #
-# The name matches out/baseline in the Chromium checkout, and it has to stay
-# that way. Renaming an output directory invalidates siso's state, which
-# records absolute paths, and forces a rebuild that renaming back does not
-# undo.
+# The name must keep matching out/baseline: siso records absolute paths, so
+# renaming the output directory forces a full rebuild that renaming back
+# does not undo.
 #
 # Validated: this configuration builds Chromium 151.0.7922.174 on Windows.
 

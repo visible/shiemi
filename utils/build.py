@@ -45,8 +45,7 @@ def main() -> int:
     print(f"chromium {config.checkout_version()} at {src}")
     print(f"flags    {flags_file.name} -> {out_dir}")
 
-    # Writing args.gn beats passing --args on the command line: gn string
-    # values contain quotes, which cmd.exe eats, and this keeps the comments.
+    # Not --args: cmd.exe eats the quotes in gn string values.
     out_path.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(flags_file, out_path / "args.gn")
 

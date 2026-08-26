@@ -9,9 +9,8 @@ export const metadata: Metadata = {
   description: DESCRIPTION,
   applicationName: 'shiemi',
   robots: { index: true, follow: true },
-  // No icons entry: app/icon.png and app/apple-icon.png are picked up by file
-  // convention, which fingerprints them and fills in the sizes. Declaring a
-  // path here as well would emit a second, competing link tag.
+  // Icons come from app/icon.png and app/apple-icon.png by file convention; an
+  // icons entry here would emit a second, competing link tag.
   openGraph: {
     type: 'website',
     siteName: 'shiemi',
@@ -27,10 +26,8 @@ export const viewport: Viewport = {
   themeColor: '#0d0d0c',
 }
 
-// No webfont link, and no analytics. A site for a browser that strips out calls
-// to Google should not open by making one, and a hosted font is exactly that: a
-// request carrying the visitor's address to a third party before the page has
-// even painted. The type is whatever the reader's machine already has.
+// No webfont and no analytics: a hosted font would carry the visitor's address
+// to a third party before the page has painted.
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">

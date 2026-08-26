@@ -1,13 +1,8 @@
 """A DevTools client with no dependencies outside the standard library.
 
-Driving the browser needs two things: the HTTP endpoint that lists targets,
-and a WebSocket to talk to one. Python ships the first and not the second, so
-the framing is implemented here rather than pulling in a package. It is about
-eighty lines, and a build tool that has to keep working for years is better
-off without a dependency that can rot.
-
-Only what CDP needs is supported: text frames, server pings and close. No
-extensions, no compression, no binary payloads.
+Python ships an HTTP client but no WebSocket, so the framing lives here rather
+than in a dependency that can rot. Only what CDP needs is supported: text
+frames, server pings and close.
 """
 
 import base64
@@ -43,8 +38,7 @@ class WebSocket:
                 "Sec-WebSocket-Version: 13\r\n\r\n"
             ).encode()
         )
-        # The response headers end at the blank line; read no further, because
-        # anything after it is already frame data.
+        # Headers end at the blank line; anything past it is already frame data.
         buf = b""
         while b"\r\n\r\n" not in buf:
             chunk = self.sock.recv(1)
@@ -130,8 +124,7 @@ class Target:
         self.next_id += 1
         mid = self.next_id
         self.ws.send(json.dumps({"id": mid, "method": method, "params": params}))
-        # Events share the socket with replies, so read past anything that is
-        # not the reply being waited on.
+        # Events share the socket with replies, so skip anything else.
         while True:
             message = json.loads(self.ws.recv())
             if message.get("id") != mid:

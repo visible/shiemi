@@ -29,7 +29,6 @@ import config
 
 DEFAULT_BINARY = config.CHROMIUM_SRC / "out" / "baseline" / "chrome.exe"
 
-# Schemes that never leave the machine.
 LOCAL_SCHEMES = {"about", "chrome", "chrome-extension", "chrome-untrusted",
                  "data", "blob", "file", "javascript", "devtools"}
 
@@ -61,8 +60,8 @@ def capture(binary: Path, seconds: int, url: str) -> str:
             proc.kill()
             proc.wait(timeout=30)
 
-    # Chromium writes the log incrementally, so a truncated tail is normal
-    # after terminating it. Read what landed rather than requiring valid JSON.
+    # The netlog is written incrementally, so a truncated tail is normal and
+    # the text is scraped rather than parsed as JSON.
     time.sleep(2)
     text = netlog.read_text(encoding="utf-8", errors="replace") if netlog.exists() else ""
     shutil.rmtree(profile, ignore_errors=True)
