@@ -40,6 +40,8 @@ LOCAL_SCHEMES = {"about", "chrome", "chrome-extension", "chrome-untrusted",
 
 URL_PATTERN = re.compile(r'"url":\s*"([^"]{1,2048})"')
 ANNOTATION_PATTERN = re.compile(r'"traffic_annotation":\s*(-?\d+)')
+SOURCE_PATTERN = re.compile(r'"source":\s*\{"id":\s*(\d+)[^}]*"type":\s*(\d+)\}')
+URL_REQUEST_SOURCE = 1
 ITEM_PATTERN = re.compile(r'<item id="([^"]+)"[^>]*?file_path="([^"]*)"')
 
 UNANNOTATED = "(unannotated)"
@@ -90,23 +92,37 @@ def capture(binary: Path, seconds: int, url: str) -> Path:
     return netlog
 
 
-def requests_from(netlog: Path):
-    """Every external request in the log, as (parsed url, annotation hash).
+def requests_from(netlog: Path) -> dict:
+    """External requests in the log, keyed by netlog source id.
+
+    One request spans many events across several sources, so counting events
+    or sockets overstates it. Only URL_REQUEST sources are counted, grouped by
+    id, which lets the annotation be picked up from whichever event carried it.
 
     The log is streamed a line at a time because capture-mode Everything runs
-    to hundreds of megabytes. One event per line means a url and the annotation
-    on the same line belong to the same request. A truncated tail is normal
-    after terminating the browser, so lines are scraped rather than parsed.
+    to hundreds of megabytes. A truncated tail is normal after terminating the
+    browser, so lines are scraped rather than parsed.
     """
+    found = {}
     for line in netlog.open(encoding="utf-8", errors="replace"):
-        found = URL_PATTERN.search(line)
-        if not found:
+        url = URL_PATTERN.search(line)
+        source = SOURCE_PATTERN.search(line)
+        if not url or not source:
             continue
-        parsed = urlparse(found.group(1))
+        if int(source.group(2)) != URL_REQUEST_SOURCE:
+            continue
+        parsed = urlparse(url.group(1))
         if parsed.scheme in LOCAL_SCHEMES or not parsed.hostname:
             continue
+        key = int(source.group(1))
         tag = ANNOTATION_PATTERN.search(line)
-        yield parsed, int(tag.group(1)) if tag else None
+        tag = int(tag.group(1)) if tag else None
+        if key in found:
+            if tag is not None and found[key][1] is None:
+                found[key] = (found[key][0], tag)
+        else:
+            found[key] = (parsed, tag)
+    return found
 
 
 def main() -> int:
@@ -141,7 +157,7 @@ def main() -> int:
     blamed = defaultdict(Counter)
     endpoints = defaultdict(Counter)
     try:
-        for parsed, tag in requests_from(netlog):
+        for parsed, tag in requests_from(netlog).values():
             host = parsed.hostname
             counts[host] += 1
             name, path = annotations.get(tag, (UNANNOTATED, ""))
