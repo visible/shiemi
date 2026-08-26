@@ -5,3 +5,5 @@
 # roughly every four weeks, and that cost scales with the count. Before
 # adding one, check whether a GN argument or an extension can do the job
 # instead.
+
+branding/product-identity.patch
