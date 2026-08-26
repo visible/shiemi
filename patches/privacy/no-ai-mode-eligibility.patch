@@ -1,0 +1,17 @@
+diff --git a/components/omnibox/browser/aim_eligibility_service_features.cc b/components/omnibox/browser/aim_eligibility_service_features.cc
+index 347599463f651..73755991944d7 100644
+--- a/components/omnibox/browser/aim_eligibility_service_features.cc
++++ b/components/omnibox/browser/aim_eligibility_service_features.cc
+@@ -8,7 +8,11 @@
+ 
+ namespace omnibox {
+ 
+-BASE_FEATURE(kAimEnabled, base::FEATURE_ENABLED_BY_DEFAULT);
++// Off by default. With this enabled the browser asks Google on startup
++// whether the user is eligible for AI Mode, before any search is typed, and
++// attaches account credentials to that request when signed in. It is the
++// documented kill switch for the whole feature.
++BASE_FEATURE(kAimEnabled, base::FEATURE_DISABLED_BY_DEFAULT);
+ 
+ BASE_FEATURE(kAimServerEligibilityEnabled, base::FEATURE_ENABLED_BY_DEFAULT);
+ 

@@ -69,14 +69,15 @@ def capture(binary: Path, seconds: int, url: str) -> str:
     return text
 
 
-def hosts_from_netlog(text: str) -> Counter:
-    counts = Counter()
+def external_urls(text: str) -> list:
+    """Parsed URLs from the log, excluding anything that stays on the machine."""
+    found = []
     for raw in URL_PATTERN.findall(text):
         parsed = urlparse(raw)
         if parsed.scheme in LOCAL_SCHEMES or not parsed.hostname:
             continue
-        counts[parsed.hostname] += 1
-    return counts
+        found.append(parsed)
+    return found
 
 
 def main() -> int:
@@ -88,6 +89,8 @@ def main() -> int:
                              "only traffic is the browser's own")
     parser.add_argument("--allow", nargs="*", default=[],
                         help="hosts that are expected and should not fail")
+    parser.add_argument("--urls", action="store_true",
+                        help="also list the endpoint paths per host")
     args = parser.parse_args()
 
     if not args.binary.exists():
@@ -100,7 +103,8 @@ def main() -> int:
     if not text:
         raise SystemExit("no netlog was written")
 
-    counts = hosts_from_netlog(text)
+    parsed_urls = external_urls(text)
+    counts = Counter(p.hostname for p in parsed_urls)
     if not counts:
         print("no external hosts contacted")
         return 0
@@ -116,6 +120,16 @@ def main() -> int:
             unexpected.append(host)
         mark = "    " if allowed else "  ! "
         print(f"{mark}{host.ljust(width)}  {count}")
+
+        if args.urls:
+            # Queries carry ids and are noisy; the path identifies the service.
+            endpoints = Counter(
+                f"{p.scheme}://{p.hostname}{p.path}"
+                for p in parsed_urls
+                if p.hostname == host
+            )
+            for endpoint, n in endpoints.most_common():
+                print(f"        {n:>3}  {endpoint}")
 
     print(f"\n{len(counts)} hosts, {sum(counts.values())} requests")
     if args.allow and unexpected:

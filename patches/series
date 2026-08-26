@@ -8,3 +8,7 @@
 
 branding/product-identity.patch
 extensions/manifest-v2-support.patch
+privacy/trim-component-updater.patch
+privacy/no-network-time.patch
+privacy/no-browser-signin-by-default.patch
+privacy/no-ai-mode-eligibility.patch

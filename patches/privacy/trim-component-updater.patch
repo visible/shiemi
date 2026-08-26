@@ -1,0 +1,99 @@
+diff --git a/chrome/browser/component_updater/registration.cc b/chrome/browser/component_updater/registration.cc
+index 78bb87ef64640..eccf6ef5d41f4 100644
+--- a/chrome/browser/component_updater/registration.cc
++++ b/chrome/browser/component_updater/registration.cc
+@@ -134,29 +134,19 @@ void DeleteOldComponents(const base::FilePath& user_data_dir) {
+ void RegisterComponentsForUpdate() {
+   auto* const cus = g_browser_process->component_updater();
+ 
+-#if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)
+-  RegisterRecoveryImprovedComponent(cus, g_browser_process->local_state());
+-#endif  // BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)
+-
+ #if BUILDFLAG(ENABLE_WIDEVINE_CDM_COMPONENT)
+   RegisterWidevineCdmComponent(cus);
+ #endif  // BUILDFLAG(ENABLE_WIDEVINE_CDM_COMPONENT)
+ 
+-  RegisterSubresourceFilterComponent(cus);
+-  RegisterOnDeviceHeadSuggestComponent(
+-      cus, g_browser_process->GetApplicationLocale());
+-  RegisterOptimizationHintsComponent(cus);
+-  RegisterTrustTokenKeyCommitmentsComponentIfTrustTokensEnabled(cus);
+-  RegisterPrivateVerificationTokensComponentIfEnabled(cus);
+-  RegisterFirstPartySetsComponent(cus);
+-  RegisterPrivacySandboxAttestationsComponent(cus);
+-  if (history_embeddings::IsHistoryEmbeddingsFeatureEnabled()) {
+-    RegisterHistorySearchStringsComponent(cus);
+-  }
++  // Only components that protect the user are registered. The rest of what
++  // upstream registers here is Google product surface - ad-tech attestations,
++  // on-device models, suggestion and shopping data - and every one of them is
++  // a recurring connection to Google that the user never asked for. What
++  // stays is security: TLS error handling, dangerous download classification,
++  // certificate revocation, Certificate Transparency and lookalike domain
++  // warnings.
+   RegisterSSLErrorAssistantComponent(cus);
+ 
+-  RegisterIndigoComponent(cus);
+-
+ #if BUILDFLAG(SAFE_BROWSING_AVAILABLE)
+   RegisterFileTypePoliciesComponent(cus);
+ #endif
+@@ -169,12 +159,10 @@ void RegisterComponentsForUpdate() {
+ #endif  // !BUILDFLAG(IS_CHROMEOS)
+ 
+   RegisterOriginTrialsComponent(cus);
+-  RegisterMediaEngagementPreloadComponent(cus, base::OnceClosure());
+ 
+   MaybeRegisterPKIMetadataComponent(cus);
+ 
+   RegisterSafetyTipsComponent(cus);
+-  RegisterCrowdDenyComponent(cus);
+ 
+ #if BUILDFLAG(IS_CHROMEOS)
+   RegisterSmartDimComponent(cus);
+@@ -187,10 +175,7 @@ void RegisterComponentsForUpdate() {
+ #endif
+ 
+ #if !BUILDFLAG(IS_ANDROID)
+-  RegisterDictationConnectorComponent(cus);
+-  RegisterIwaKeyDistributionComponent(cus);
+   RegisterZxcvbnDataComponent(cus);
+-  RegisterActorSafetyListsComponent(cus, base::OnceClosure());
+ #endif  // !BUILDFLAG(IS_ANDROID)
+ 
+ #if BUILDFLAG(IS_ANDROID)
+@@ -198,11 +183,11 @@ void RegisterComponentsForUpdate() {
+ #endif  // BUIDLFLAG(IS_ANDROID)
+ 
+ #if !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_CHROMEOS)
++  // Kept so that accessibility is not collateral damage. It only downloads
++  // when a feature that needs it is actually used.
+   ManageScreenAIComponentRegistration(cus, g_browser_process->local_state());
+ #endif  // !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_CHROMEOS)
+ 
+-  RegisterCommerceHeuristicsComponent(cus);
+-
+ #if BUILDFLAG(ENABLE_ON_DEVICE_TRANSLATION)
+   // TODO(crbug.com/364795294): Support other platforms.
+   RegisterTranslateKitComponent(cus, g_browser_process->local_state(),
+@@ -215,18 +200,11 @@ void RegisterComponentsForUpdate() {
+       cus, g_browser_process->local_state());
+ #endif  // BUILDFLAG(ENABLE_ON_DEVICE_TRANSLATION)
+ 
+-#if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX) || \
+-    BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_ANDROID)
+-  RegisterAmountExtractionHeuristicRegexesComponent(cus);
+-#endif  // BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX) ||
+-        // BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_ANDROID)
+-
+ #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX)
++  // Local speech synthesis, rather than sending text to a cloud voice.
+   RegisterWasmTtsEngineComponent(cus, g_browser_process->local_state());
+ #endif  // BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX)
+ 
+-  RegisterCaptchaProviderComponent(cus);
+-
+   MaybeRegisterPlatformRuntimeComponent(cus);
+ 
+   base::FilePath path;
