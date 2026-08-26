@@ -1,24 +1,16 @@
-```
-┌──────────────────────────────────────────────────────────────┐
-│                                                              │
-│   / shiemi                                                   │
-│                                                              │
-│   you're someone, not a datapoint                            │
-│                                                              │
-└──────────────────────────────────────────────────────────────┘
-```
-
 ```bash
-> what is this?
+> shiemi?
 
-  a chromium browser
-  no ads, no tracking, no telemetry
-  shiemi.com
+  a chromium browser.
+  you're someone, not a datapoint.
+
+> what's different?
+
+  no ads, no tracking, no telemetry.
 
 > status?
 
-  early — patched builds, not released
-  → shiemi.com
+  just for fun. with some friends.
 
 > stack?
 
@@ -35,4 +27,8 @@
 > license?
 
   gpl-3.0
+
+> links?
+
+  https://shiemi.com
 ```
