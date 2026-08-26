@@ -7,6 +7,7 @@
 # instead.
 
 branding/product-identity.patch
+branding/no-api-key-warning.patch
 extensions/manifest-v2-support.patch
 extensions/no-registry-installs.patch
 privacy/trim-component-updater.patch
