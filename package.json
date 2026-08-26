@@ -17,5 +17,8 @@
     "web": "bun run --filter '@shiemi/web' dev",
     "web:build": "bun run --filter '@shiemi/web' build",
     "typecheck": "bun run --filter '@shiemi/web' typecheck"
+  },
+  "devDependencies": {
+    "sharp": "^0.35.4"
   }
 }

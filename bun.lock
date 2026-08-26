@@ -4,6 +4,9 @@
   "workspaces": {
     "": {
       "name": "shiemi",
+      "devDependencies": {
+        "sharp": "^0.35.4",
+      },
     },
     "apps/web": {
       "name": "@shiemi/web",
