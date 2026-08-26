@@ -1,0 +1,16 @@
+diff --git a/components/update_client/protocol_parser_json.cc b/components/update_client/protocol_parser_json.cc
+index 359cb350b5832..9e4cec03b9fdc 100644
+--- a/components/update_client/protocol_parser_json.cc
++++ b/components/update_client/protocol_parser_json.cc
+@@ -127,6 +127,11 @@ base::expected<ProtocolParser::Operation, std::string> ParseOperation(
+       }
+       op.urls.push_back(gurl);
+     }
++    // Payloads are signed, so upstream is content to fetch them over plain
++    // HTTP, but the URL still tells the network which components a user has.
++    // Order TLS first and leave any http entry as a last resort.
++    std::stable_partition(op.urls.begin(), op.urls.end(),
++                          [](const GURL& url) { return url.SchemeIs("https"); });
+   }
+   return op;
+ }
