@@ -1,0 +1,54 @@
+diff --git a/chrome/browser/ui/layout_constants.cc b/chrome/browser/ui/layout_constants.cc
+index d89ceaf9e4b0c..b7dddeeaaf1f5 100644
+--- a/chrome/browser/ui/layout_constants.cc
++++ b/chrome/browser/ui/layout_constants.cc
+@@ -100,12 +100,12 @@ int GetLayoutConstant(LayoutConstant constant) {
+     case LayoutConstant::kTabCloseButtonSize:
+       return touch_ui ? 24 : (features::IsRoundedIconsEnabled() ? 14 : 16);
+     case LayoutConstant::kTabHeight:
+-      return 34 + GetLayoutConstant(LayoutConstant::kTabstripToolbarOverlap);
++      return 32 + GetLayoutConstant(LayoutConstant::kTabstripToolbarOverlap);
+     case LayoutConstant::kTabStripHeight:
+       return GetLayoutConstant(LayoutConstant::kTabHeight) +
+              GetLayoutConstant(LayoutConstant::kTabStripPadding);
+     case LayoutConstant::kTabStripPadding:
+-      return 6;
++      return 4;
+     case LayoutConstant::kTabSeparatorHeight:
+       return touch_ui ? 24 : 20;
+     case LayoutConstant::kTabPreTitlePadding:
+diff --git a/chrome/browser/ui/tabs/tab_style.cc b/chrome/browser/ui/tabs/tab_style.cc
+index fbfe095b4c1a3..fca2221eebdaa 100644
+--- a/chrome/browser/ui/tabs/tab_style.cc
++++ b/chrome/browser/ui/tabs/tab_style.cc
+@@ -19,10 +19,10 @@ namespace {
+ 
+ // Thickness in DIPs of the separator painted on the left and right edges of
+ // the tab.
+-constexpr int kSeparatorThickness = 2;
++constexpr int kSeparatorThickness = 1;
+ constexpr int kSeparatorHorizontalMargin = 2;
+ // TODO (crbug.com/40915785): This constant should be in LayoutConstants.
+-constexpr int kSeparatorHeight = 16;
++constexpr int kSeparatorHeight = 14;
+ 
+ // The padding from the top of the tab to the content area.
+ constexpr int kTabVerticalPadding = 6;
+@@ -98,11 +98,15 @@ int TabStyle::GetMinimumInactiveWidth() const {
+ }
+ 
+ int TabStyle::GetTopCornerRadius() const {
+-  return 10;
++  return 4;
+ }
+ 
+ int TabStyle::GetBottomCornerRadius() const {
+-  return 12;
++  // Also sets the horizontal contents inset, the standard width and the tab
++  // overlap, so lowering it squares the tab off and tightens it at once.
++  // GetTabOverlap() subtracts the separator from twice this, so it cannot go
++  // below 3 without the overlap turning negative.
++  return 4;
+ }
+ 
+ int TabStyle::GetTabOverlap() const {
