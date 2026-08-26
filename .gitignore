@@ -1,7 +1,6 @@
 __pycache__/
 *.pyc
-.env
-.env.local
+.env*
 node_modules/
 .next/
 next-env.d.ts
