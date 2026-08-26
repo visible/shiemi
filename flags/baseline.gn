@@ -1,0 +1,25 @@
+# The standard build: patches applied, optimised for compile time rather than
+# runtime. This is the one to use while developing patches.
+#
+# The name matches out/baseline in the Chromium checkout, and it has to stay
+# that way. Renaming an output directory invalidates siso's state, which
+# records absolute paths, and forces a rebuild that renaming back does not
+# undo.
+#
+# Validated: this configuration builds Chromium 151.0.7922.174 on Windows.
+
+is_debug = false
+is_component_build = false
+
+# Symbols dominate link time and nothing here is being debugged yet.
+symbol_level = 0
+blink_symbol_level = 0
+v8_symbol_level = 0
+
+# PGO instrumentation roughly triples build time.
+chrome_pgo_phase = 0
+
+# Remote execution is unavailable to external contributors on Windows.
+use_remoteexec = false
+
+treat_warnings_as_errors = false

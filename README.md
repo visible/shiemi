@@ -30,7 +30,7 @@
   set SHIEMI_CHROMIUM_SRC to point at it
 
   python3 utils/patches.py apply
-  python3 utils/build.py --flags dev
+  python3 utils/build.py
 
 > license?
 

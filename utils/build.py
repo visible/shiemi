@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Configure and build shiemi from the Chromium checkout.
 
-  python3 utils/build.py                       # dev flags, target chrome
+  python3 utils/build.py                       # baseline flags, target chrome
   python3 utils/build.py --flags release
-  python3 utils/build.py --flags dev --gen-only
+  python3 utils/build.py --gen-only
 
 Requires depot_tools on PATH. Output goes to out/<flags> unless --out says
 otherwise, so dev and release builds do not clobber each other.
@@ -25,7 +25,9 @@ def run(cmd: str, cwd) -> int:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--flags", default="dev", help="name in flags/, without .gn")
+    parser.add_argument(
+        "--flags", default="baseline", help="name in flags/, without .gn"
+    )
     parser.add_argument("--out", help="output dir under out/ (default: same as --flags)")
     parser.add_argument("--target", default="chrome")
     parser.add_argument("--gen-only", action="store_true")
