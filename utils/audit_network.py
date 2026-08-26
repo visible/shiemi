@@ -20,6 +20,9 @@ not: component update checks vary from one to six per run regardless of window
 length, so treat a changed request count as noise and a host appearing or
 disappearing as the real signal.
 
+--headless reports the same hosts and counts as a windowed run, so prefer it:
+nothing takes focus while the audit is running.
+
 Exit code is 1 if any host outside --allow was contacted, so this can gate a
 release once the expected set is settled.
 """
@@ -146,7 +149,11 @@ def main() -> int:
     parser.add_argument("--flag", action="append", default=[], metavar="ARG",
                         help="extra browser switch, repeatable; use to try a "
                              "feature before committing to a patch")
+    parser.add_argument("--headless", action="store_true",
+                        help="run without opening a window")
     args = parser.parse_args()
+
+    flags = args.flag + (["--headless"] if args.headless else [])
 
     if not args.binary.exists():
         raise SystemExit(f"no browser at {args.binary} - build it first")
@@ -159,7 +166,7 @@ def main() -> int:
         print(f"warning: no annotations at {ANNOTATIONS}, "
               "requests will not be attributed\n", file=sys.stderr)
 
-    netlog = capture(args.binary, args.seconds, args.url, args.flag)
+    netlog = capture(args.binary, args.seconds, args.url, flags)
     if not netlog.exists():
         raise SystemExit("no netlog was written")
 
