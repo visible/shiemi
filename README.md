@@ -10,7 +10,7 @@
 
 > status?
 
-  just for fun. with some friends.
+  just for fun, for me and a few friends.
 
 > stack?
 
