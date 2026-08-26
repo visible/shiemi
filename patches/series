@@ -13,5 +13,6 @@ privacy/trim-component-updater.patch
 privacy/https-component-downloads.patch
 privacy/no-network-time.patch
 privacy/no-browser-signin-by-default.patch
+privacy/no-startup-listaccounts.patch
 privacy/no-ai-mode-eligibility.patch
 privacy/no-gcm-registration.patch

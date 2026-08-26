@@ -1,0 +1,68 @@
+diff --git a/chrome/browser/signin/account_investigator_factory.cc b/chrome/browser/signin/account_investigator_factory.cc
+index bf8db216eface..a3bc27fbd4b24 100644
+--- a/chrome/browser/signin/account_investigator_factory.cc
++++ b/chrome/browser/signin/account_investigator_factory.cc
+@@ -54,7 +54,10 @@ void AccountInvestigatorFactory::RegisterProfilePrefs(
+ }
+ 
+ bool AccountInvestigatorFactory::ServiceIsCreatedWithBrowserContext() const {
+-  return true;
++  // Starting it calls accounts.google.com/ListAccounts on a profile that never
++  // signed in, only to report cookie-jar metrics. Nothing calls GetForProfile,
++  // so declining here means it is never built.
++  return false;
+ }
+ 
+ bool AccountInvestigatorFactory::ServiceIsNULLWhileTesting() const {
+diff --git a/chrome/browser/signin/signin_ui_util.cc b/chrome/browser/signin/signin_ui_util.cc
+index d5caaf7c8ca99..3ca9ed444a981 100644
+--- a/chrome/browser/signin/signin_ui_util.cc
++++ b/chrome/browser/signin/signin_ui_util.cc
+@@ -406,6 +406,11 @@ std::vector<AccountInfo> GetOrderedAccountsForDisplay(
+   // Fetch account ids for accounts that have a token and are in cookie jar.
+   std::vector<AccountInfo> accounts_with_tokens =
+       identity_manager->GetExtendedAccountInfoForAccountsWithRefreshToken();
++  // Nothing below can be returned without a refresh token, so with none there
++  // is no result to build and no reason to have /ListAccounts fetch the jar.
++  if (accounts_with_tokens.empty()) {
++    return {};
++  }
+   signin::AccountsInCookieJarInfo accounts_in_jar =
+       identity_manager->GetAccountsInCookieJar();
+   // Compute the default account.
+diff --git a/components/sync/service/sync_session_durations_metrics_recorder.cc b/components/sync/service/sync_session_durations_metrics_recorder.cc
+index 2ef12f429ef6a..0263c56648328 100644
+--- a/components/sync/service/sync_session_durations_metrics_recorder.cc
++++ b/components/sync/service/sync_session_durations_metrics_recorder.cc
+@@ -69,10 +69,11 @@ SyncSessionDurationsMetricsRecorder::SyncSessionDurationsMetricsRecorder(
+   signin_status_ = DetermineBrowserSigninStatus();
+   sync_status_ = DetermineSyncStatus();
+ 
+-  // Check if we already know the signed in cookies. This will trigger a fetch
+-  // if we don't have them yet.
++  // Check if we already know the signed in cookies. Deliberately the cached
++  // accessor: the fetching one calls /ListAccounts at every startup to bucket
++  // a session-duration metric.
+   signin::AccountsInCookieJarInfo accounts_in_cookie_jar_info =
+-      identity_manager_->GetAccountsInCookieJar();
++      identity_manager_->GetCachedAccountsInCookieJar();
+   if (accounts_in_cookie_jar_info.AreAccountsFresh()) {
+     OnAccountsInCookieUpdated(accounts_in_cookie_jar_info,
+                               GoogleServiceAuthError::AuthErrorNone());
+diff --git a/components/trusted_vault/standalone_trusted_vault_client.cc b/components/trusted_vault/standalone_trusted_vault_client.cc
+index 4243e453262bb..c5d6ca33920ca 100644
+--- a/components/trusted_vault/standalone_trusted_vault_client.cc
++++ b/components/trusted_vault/standalone_trusted_vault_client.cc
+@@ -165,8 +165,11 @@ void IdentityManagerObserver::OnRefreshTokensLoaded() {
+             primary_account_.account_id),
+         signin_metrics::SourceForRefreshTokenOperation::kUnknown);
+   }
++  // Cached accessor: the fetching one calls /ListAccounts at every startup, and
++  // this does nothing unless the accounts are already fresh. Once they are,
++  // OnAccountsInCookieUpdated() delivers them here anyway.
+   UpdateAccountsInCookieJarInfoIfNeeded(
+-      identity_manager_->GetAccountsInCookieJar());
++      identity_manager_->GetCachedAccountsInCookieJar());
+ }
+ 
+ void IdentityManagerObserver::OnIdentityManagerShutdown(
