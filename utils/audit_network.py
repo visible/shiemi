@@ -4,6 +4,7 @@
   python3 utils/audit_network.py
   python3 utils/audit_network.py --seconds 40 --url https://example.com
   python3 utils/audit_network.py --urls
+  python3 utils/audit_network.py --flag --enable-features=SomeFeature
 
 Launches a build against a throwaway profile with network logging enabled,
 sits idle, then reports which hosts were contacted and how often. Anything
@@ -13,6 +14,11 @@ worth arguing about. Re-run after a privacy patch to prove a host is gone.
 Each request is attributed to the Chromium subsystem that made it, resolved
 from the traffic annotation in the log, so the output names the file to patch
 instead of leaving a hostname to guess at.
+
+Which hosts appear is stable between runs. How many requests each one made is
+not: component update checks vary from one to six per run regardless of window
+length, so treat a changed request count as noise and a host appearing or
+disappearing as the real signal.
 
 Exit code is 1 if any host outside --allow was contacted, so this can gate a
 release once the expected set is settled.
@@ -63,7 +69,7 @@ def load_annotations() -> dict:
             for name, path in ITEM_PATTERN.findall(text)}
 
 
-def capture(binary: Path, seconds: int, url: str) -> Path:
+def capture(binary: Path, seconds: int, url: str, flags: list) -> Path:
     """Run the browser briefly and return the netlog path."""
     profile = Path(tempfile.mkdtemp(prefix="shiemi-audit-"))
     netlog = profile / "netlog.json"
@@ -75,6 +81,7 @@ def capture(binary: Path, seconds: int, url: str) -> Path:
         "--net-log-capture-mode=Everything",
         "--no-first-run",
         "--no-default-browser-check",
+        *flags,
         url,
     ])
 
@@ -136,6 +143,9 @@ def main() -> int:
                         help="hosts that are expected and should not fail")
     parser.add_argument("--urls", action="store_true",
                         help="also list the endpoint paths per host")
+    parser.add_argument("--flag", action="append", default=[], metavar="ARG",
+                        help="extra browser switch, repeatable; use to try a "
+                             "feature before committing to a patch")
     args = parser.parse_args()
 
     if not args.binary.exists():
@@ -149,7 +159,7 @@ def main() -> int:
         print(f"warning: no annotations at {ANNOTATIONS}, "
               "requests will not be attributed\n", file=sys.stderr)
 
-    netlog = capture(args.binary, args.seconds, args.url)
+    netlog = capture(args.binary, args.seconds, args.url, args.flag)
     if not netlog.exists():
         raise SystemExit("no netlog was written")
 
