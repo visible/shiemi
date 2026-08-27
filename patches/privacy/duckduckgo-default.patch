@@ -1,0 +1,16 @@
+diff --git a/components/search_engines/template_url_prepopulate_data.cc b/components/search_engines/template_url_prepopulate_data.cc
+index 23c3c13f2f0ec..65d212d51b0d3 100644
+--- a/components/search_engines/template_url_prepopulate_data.cc
++++ b/components/search_engines/template_url_prepopulate_data.cc
+@@ -275,8 +275,10 @@ std::unique_ptr<TemplateURLData> GetPrepopulatedFallbackSearch(
+     PrefService& prefs,
+     const std::vector<const PrepopulatedEngine*>&
+         regional_prepopulated_engines) {
++  // Regions whose prepopulated list has no DuckDuckGo fall back to their own
++  // first entry, which is what those users can actually reach.
+   return FindPrepopulatedEngineInternal(prefs, regional_prepopulated_engines,
+-                                        google.id,
++                                        duckduckgo.id,
+                                         /*use_first_as_fallback=*/true);
+ }
+ 
