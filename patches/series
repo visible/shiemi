@@ -18,3 +18,4 @@ privacy/no-startup-listaccounts.patch
 privacy/no-ai-mode-eligibility.patch
 privacy/no-gcm-registration.patch
 ui/minimal-chrome.patch
+ui/brand-theme.patch

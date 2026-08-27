@@ -1,0 +1,31 @@
+diff --git a/chrome/browser/themes/theme_service.cc b/chrome/browser/themes/theme_service.cc
+index bf9cb4c809b32..71512d93dddc6 100644
+--- a/chrome/browser/themes/theme_service.cc
++++ b/chrome/browser/themes/theme_service.cc
+@@ -96,6 +96,9 @@ namespace {
+ // ExtensionService::GarbageCollectExtensions() does something similar.
+ constexpr base::TimeDelta kRemoveUnusedThemesStartupDelay = base::Seconds(30);
+ 
++// Seed for the default theme. Matches the plate colour of the product mark.
++constexpr SkColor kBrandSeedColor = SkColorSetRGB(0xD2, 0x70, 0x3F);
++
+ bool g_dont_write_theme_pack_for_testing = false;
+ 
+ // Writes the theme pack to disk on a separate thread.
+@@ -296,14 +299,14 @@ void ThemeService::RegisterProfilePrefs(
+   registry->RegisterIntegerPref(
+       prefs::kDeprecatedUserColorDoNotUse, SK_ColorTRANSPARENT,
+       user_prefs::PrefRegistrySyncable::SYNCABLE_PREF);
+-  registry->RegisterIntegerPref(prefs::kUserColor, SK_ColorTRANSPARENT);
++  registry->RegisterIntegerPref(prefs::kUserColor, kBrandSeedColor);
+   registry->RegisterIntegerPref(
+       prefs::kDeprecatedBrowserColorVariantDoNotUse,
+       static_cast<int>(ui::mojom::BrowserColorVariant::kSystem),
+       user_prefs::PrefRegistrySyncable::SYNCABLE_PREF);
+   registry->RegisterIntegerPref(
+       prefs::kBrowserColorVariant,
+-      static_cast<int>(ui::mojom::BrowserColorVariant::kSystem));
++      static_cast<int>(ui::mojom::BrowserColorVariant::kNeutral));
+   registry->RegisterBooleanPref(
+       prefs::kDeprecatedGrayscaleThemeEnabledDoNotUse, false,
+       user_prefs::PrefRegistrySyncable::SYNCABLE_PREF);
