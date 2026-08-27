@@ -7,13 +7,13 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE),
   title: TITLE,
   description: DESCRIPTION,
-  applicationName: 'shiemi',
+  applicationName: 'Shiemi',
   robots: { index: true, follow: true },
   // Icons come from app/icon.svg and app/apple-icon.png by file convention; an
   // icons entry here would emit a second, competing link tag.
   openGraph: {
     type: 'website',
-    siteName: 'shiemi',
+    siteName: 'Shiemi',
     locale: 'en_US',
     url: SITE,
     title: TITLE,

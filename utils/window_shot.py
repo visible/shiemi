@@ -2,7 +2,7 @@
 """Capture one window's pixels and nothing else.
 
   python3 utils/window_shot.py shot.png --pid 1234
-  python3 utils/window_shot.py shot.png --title shiemi --crop-height 120
+  python3 utils/window_shot.py shot.png --title Shiemi --crop-height 120
 
 UI work has to be checked by looking at it, but a full-screen grab records
 whatever else is open and needs the window in the foreground. PrintWindow asks

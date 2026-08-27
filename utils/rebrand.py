@@ -14,9 +14,10 @@ licence violation rather than branding.
 """
 
 import re
+import subprocess
 from pathlib import Path
 
-PRODUCT = "shiemi"
+PRODUCT = "Shiemi"
 
 KEEP = re.compile(r"Chromium Authors|chromium\.org|Chromium OS|ChromiumOS")
 
@@ -52,10 +53,25 @@ def rewrite(path: Path, product: str = PRODUCT) -> int:
     return changed
 
 
+def restore(src: Path, relative: str) -> None:
+    """Put the upstream file back before rewriting it.
+
+    The rewrite looks for "Chromium", so running it twice is a no-op and a
+    changed PRODUCT would otherwise leave the previous name in place. This step
+    owns the file outright, so discarding local edits to it is intended.
+    """
+    subprocess.run(
+        ["git", "-C", str(src), "checkout", "--", relative],
+        capture_output=True,
+        check=False,
+    )
+
+
 def apply(src: Path, product: str = PRODUCT) -> int:
     total = 0
     for relative in TARGETS:
         path = src / relative
         if path.exists():
+            restore(src, relative)
             total += rewrite(path, product)
     return total

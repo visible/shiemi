@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Apply, revert and check shiemi's patches against a Chromium checkout.
+"""Apply, revert and check Shiemi's patches against a Chromium checkout.
 
   python3 utils/patches.py status
   python3 utils/patches.py apply

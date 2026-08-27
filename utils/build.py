@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Configure and build shiemi from the Chromium checkout.
+"""Configure and build Shiemi from the Chromium checkout.
 
   python3 utils/build.py                       # baseline flags, target chrome
   python3 utils/build.py --flags release

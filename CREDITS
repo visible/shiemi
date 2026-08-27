@@ -1,4 +1,4 @@
-shiemi is licensed under GPL-3.0. See LICENSE.
+Shiemi is licensed under GPL-3.0. See LICENSE.
 
 Everything original to this repository - the patches, the GN argument files,
 the build and measurement tooling - is GPL-3.0. Code that arrived from another

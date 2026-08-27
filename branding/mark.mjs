@@ -1,5 +1,5 @@
 /**
- * The shiemi mark: one arc rotated four times around an empty centre, with the
+ * The Shiemi mark: one arc rotated four times around an empty centre, with the
  * top arc carrying the accent.
  *
  * Geometry lives here rather than in an exported asset so every surface draws
