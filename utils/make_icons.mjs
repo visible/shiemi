@@ -17,7 +17,7 @@ import { Buffer } from 'node:buffer'
 import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import sharp from 'sharp'
-import { INK_LIGHT, PLATE, svg, themedSvg, vectorIcon } from '../branding/mark.mjs'
+import { MARK, svg, vectorIcon } from '../branding/mark.mjs'
 
 const ROOT = path.resolve(import.meta.dirname, '..')
 const OUT = path.join(ROOT, 'branding', 'icons')
@@ -98,14 +98,14 @@ async function buildIco() {
   const payloads = []
 
   for (const size of ICO_BMP) {
-    const { data } = await draw(size, { plate: PLATE })
+    const { data } = await draw(size)
       .raw()
       .toBuffer({ resolveWithObject: true })
     payloads.push({ size, data: bmpPayload(data, size) })
   }
 
   for (const size of ICO_PNG) {
-    const data = await draw(size, { plate: PLATE }).png({ compressionLevel: 9 }).toBuffer()
+    const data = await draw(size).png({ compressionLevel: 9 }).toBuffer()
     payloads.push({ size, data })
   }
 
@@ -132,27 +132,27 @@ await writeFile(path.join(OUT, 'win', 'chromium.ico'), ico)
 console.log(`  chromium.ico            ${ICO_BMP.length + ICO_PNG.length} images  ${ico.length} bytes`)
 
 for (const size of LOGOS) {
-  const data = await draw(size, { plate: PLATE }).png({ compressionLevel: 9 }).toBuffer()
+  const data = await draw(size).png({ compressionLevel: 9 }).toBuffer()
   await writeFile(path.join(OUT, `product_logo_${size}.png`), data)
   report(`product_logo_${size}.png`, data.length)
 }
 
-// Tray and status surfaces expect a single-colour mark, so the accent drops out
-// and the plate with it.
-const mono = await draw(22, { ink: INK_LIGHT, accent: null })
+// Tray and status surfaces composite a single-colour mark themselves, so the
+// plate drops out and the petals carry the shape alone.
+const mono = await draw(22, { colour: MARK, plate: null })
   .png({ compressionLevel: 9 })
   .toBuffer()
 await writeFile(path.join(OUT, 'product_logo_22_mono.png'), mono)
 report('product_logo_22_mono.png', mono.length)
 
-// The favicon ships as SVG so the ink can follow the tab strip's scheme. Apple
-// touch icons cannot, and are composited on an unknown colour, so that one
-// keeps its plate.
-const favicon = themedSvg()
+// The favicon ships as SVG so one file serves every tab size. It keeps the
+// plate: a tab strip is light in one theme and dark in the other, and white
+// petals alone would disappear against the light one.
+const favicon = svg({ size: 32 })
 await writeFile(path.join(WEB, 'icon.svg'), `${favicon}\n`)
 report('app/icon.svg', favicon.length + 1)
 
-const apple = await draw(180, { plate: PLATE }).png({ compressionLevel: 9 }).toBuffer()
+const apple = await draw(180).png({ compressionLevel: 9 }).toBuffer()
 await writeFile(path.join(WEB, 'apple-icon.png'), apple)
 report('app/apple-icon.png', apple.length)
 

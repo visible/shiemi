@@ -1,72 +1,97 @@
 /**
- * The Shiemi mark: one arc rotated four times around an empty centre, with the
- * top arc carrying the accent.
+ * The Shiemi mark: six petals radiating from an open centre.
  *
  * Geometry lives here rather than in an exported asset so every surface draws
  * the same shape from the same numbers, and so the icon is reproducible from
  * source like the rest of the build.
  */
 
+export const PLATE = '#d2703f'
+export const MARK = '#ffffff'
 export const INK_DARK = '#121211'
 export const INK_LIGHT = '#ecebe8'
-export const PLATE = '#0d0d0c'
-export const ACCENT = '#d2703f'
 
 const BOX = 32
 const MID = BOX / 2
+const COUNT = 6
 
 /**
- * Stroke, radius and span per rendered size rather than one set scaled down.
+ * Petal proportions per rendered size rather than one set scaled down.
  *
- * Two things fail if the large-size numbers are simply shrunk. A 16px icon gets
- * 1.5 device pixels of stroke, which antialiases into a grey smudge, so small
- * sizes are drawn heavier. And the round caps overhang each arc end by half the
- * stroke, which leaves a gap of about a third of the stroke width: fine at 8
- * device pixels, gone below one, at which point the four arcs fuse into a plain
- * ring and the mark loses its shape. So the span shortens as the size drops,
- * holding the gap above 1.4 device pixels everywhere.
+ * The large numbers are the drawn shape. Below 32 a petal is under two device
+ * pixels across at its widest, which antialiases into a grey smear and closes
+ * the gaps between petals, so small sizes are drawn shorter and fatter to hold
+ * six distinct shapes.
  */
 function geometry(size) {
-  if (size <= 20) return { radius: 10.4, stroke: 4, span: 52 }
-  if (size <= 32) return { radius: 10.6, stroke: 3.4, span: 61 }
-  return { radius: 10.7, stroke: 3.1, span: 68 }
+  if (size <= 20) return { tip: 11.8, width: 29, base: 2.9 }
+  if (size <= 32) return { tip: 12.2, width: 25, base: 2.4 }
+  return { tip: 12.4, width: 21, base: 2.0 }
 }
 
 const rad = (deg) => (deg * Math.PI) / 180
 const fixed = (n) => Number(n.toFixed(2))
 
-function arc(mid, { radius, span, stroke }, colour, className) {
-  const at = (deg) =>
-    `${fixed(MID + radius * Math.cos(rad(deg)))} ${fixed(MID + radius * Math.sin(rad(deg)))}`
-  return (
-    `<path d="M ${at(mid - span / 2)} A ${radius} ${radius} 0 0 1 ${at(mid + span / 2)}" ` +
-    (className ? `class="${className}" ` : '') +
-    `fill="none" stroke="${colour}" stroke-width="${stroke}" stroke-linecap="round"/>`
-  )
+const angles = () =>
+  Array.from({ length: COUNT }, (_, i) => -90 + i * (360 / COUNT))
+
+/**
+ * One petal as polar anchor and control points: narrow at the centre, swelling
+ * out to a rounded tip and back. Two cubics, so it serialises to both SVG and
+ * Chromium's vector icon format without either one reparsing the other.
+ *
+ * `width` is the angular spread of the control points rather than of the curve,
+ * so a petal reads a little narrower than the number suggests.
+ */
+function petal(deg, { tip, width, base }) {
+  return [
+    [base, deg],
+    [tip * 0.55, deg - width],
+    [tip * 0.97, deg - width * 0.5],
+    [tip, deg],
+    [tip * 0.97, deg + width * 0.5],
+    [tip * 0.55, deg + width],
+    [base, deg],
+  ]
 }
 
-/** The four arcs alone, no plate and no wrapper. */
-export function arcs({ size = 256, ink = INK_LIGHT, accent = ACCENT } = {}) {
+/** Project polar points onto a square canvas of the given side. */
+const projector = (side) => (r, deg) => {
+  const scale = side / BOX
+  return [
+    fixed(side / 2 + r * scale * Math.cos(rad(deg))),
+    fixed(side / 2 + r * scale * Math.sin(rad(deg))),
+  ]
+}
+
+/** The petals alone, no plate and no wrapper. */
+export function petals({ size = 256, colour = MARK } = {}) {
   const geo = geometry(size)
-  // Top arc first, so the accent always lands in the same place.
-  return [0, 1, 2, 3]
-    .map((i) => arc(-90 + i * 90, geo, i === 0 && accent ? accent : ink))
+  const at = projector(BOX)
+  return angles()
+    .map((deg) => {
+      const [start, ...rest] = petal(deg, geo).map(([r, d]) => at(r, d).join(' '))
+      return (
+        `<path d="M ${start} C ${rest.slice(0, 3).join(' ')} ` +
+        `C ${rest.slice(3).join(' ')} Z" fill="${colour}"/>`
+      )
+    })
     .join('')
 }
 
 /**
  * A complete SVG document.
  *
- * `plate` is for anywhere the mark cannot ask what is behind it: a Windows icon
- * has no way to read the taskbar colour, and ink on its own would disappear.
- * Browser tabs can be asked, so the favicon leaves it off.
+ * `plate` carries the brand colour and keeps the mark legible on a surface we
+ * do not control, which is every surface an icon lands on: a taskbar, a tab
+ * strip, a home screen. White petals on their own would vanish on light.
  */
-export function svg({ size = 256, ink = INK_LIGHT, accent = ACCENT, plate = null } = {}) {
-  const radius = fixed(BOX * 0.23)
+export function svg({ size = 256, colour = MARK, plate = PLATE } = {}) {
+  const radius = fixed(BOX * 0.234)
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${BOX} ${BOX}">` +
     (plate ? `<rect width="${BOX}" height="${BOX}" rx="${radius}" fill="${plate}"/>` : '') +
-    arcs({ size, ink, accent }) +
+    petals({ size, colour }) +
     '</svg>'
   )
 }
@@ -75,69 +100,34 @@ export function svg({ size = 256, ink = INK_LIGHT, accent = ACCENT, plate = null
  * The mark in Chromium's vector icon format, for the product logo drawn in
  * infobars, dialogs and the omnibox.
  *
- * That format fills paths and has no stroke command, so each arc is emitted as
- * an annular sector closed by a semicircular cap at each end. ARC_TO takes the
- * SVG argument order: rx, ry, rotation, large-arc, sweep, x, y.
- *
- * No colour is emitted. Every surface that draws this tints it to suit the
- * theme, so a fixed colour would be wrong against one background or the other,
- * and the accent belongs on the app icon where the backdrop is ours.
+ * No colour and no plate are emitted: every surface that draws this tints it to
+ * suit the theme, so anything fixed here would fight one theme or the other.
+ * CUBIC_TO takes absolute control points, in the SVG argument order.
  */
 export function vectorIcon(canvases = [24]) {
-  const sizes = [...canvases].sort((a, b) => b - a)
-  return sizes.map(sector).join('\n') + '\n'
+  return (
+    [...canvases]
+      // The aggregator rejects representations that are not largest first.
+      .sort((a, b) => b - a)
+      .map(representation)
+      .join('\n') + '\n'
+  )
 }
 
-function sector(canvas) {
-  const scale = canvas / BOX
-  const { radius, span, stroke } = geometry(canvas)
-  const cap = (stroke * scale) / 2
-  const outer = radius * scale + cap
-  const inner = radius * scale - cap
-  const centre = canvas / 2
-  const at = (r, deg) =>
-    `${fixed(centre + r * Math.cos(rad(deg)))}, ${fixed(centre + r * Math.sin(rad(deg)))}`
+function representation(canvas) {
+  const geo = geometry(canvas)
+  const at = projector(canvas)
 
   const lines = [`CANVAS_DIMENSIONS, ${canvas},`]
-  for (const i of [0, 1, 2, 3]) {
-    const from = -90 + i * 90 - span / 2
-    const to = -90 + i * 90 + span / 2
+  for (const deg of angles()) {
+    const [start, ...rest] = petal(deg, geo).map(([r, d]) => at(r, d).join(', '))
     lines.push(
-      `MOVE_TO, ${at(outer, from)},`,
-      `ARC_TO, ${fixed(outer)}, ${fixed(outer)}, 0, 0, 1, ${at(outer, to)},`,
-      `ARC_TO, ${fixed(cap)}, ${fixed(cap)}, 0, 0, 1, ${at(inner, to)},`,
-      `ARC_TO, ${fixed(inner)}, ${fixed(inner)}, 0, 0, 0, ${at(inner, from)},`,
-      `ARC_TO, ${fixed(cap)}, ${fixed(cap)}, 0, 0, 1, ${at(outer, from)},`,
+      `MOVE_TO, ${start},`,
+      `CUBIC_TO, ${rest.slice(0, 3).join(', ')},`,
+      `CUBIC_TO, ${rest.slice(3).join(', ')},`,
       'CLOSE,',
     )
   }
   lines[lines.length - 1] = 'CLOSE'
   return lines.join('\n')
-}
-
-/**
- * Favicon variant: no plate, and the ink follows the browser's scheme.
- *
- * The stroke is set twice on purpose. The attribute is what renderers that
- * ignore stylesheets will use, and custom properties are worse still: librsvg
- * drops a var() stroke entirely and the mark loses three of its four arcs.
- */
-export function themedSvg() {
-  const geo = geometry(32)
-  const body = [0, 1, 2, 3]
-    .map((i) =>
-      i === 0
-        ? arc(-90, geo, ACCENT)
-        : arc(-90 + i * 90, geo, INK_DARK, 'ink'),
-    )
-    .join('')
-  return (
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${BOX} ${BOX}">` +
-    '<style>' +
-    `.ink{stroke:${INK_DARK}}` +
-    `@media(prefers-color-scheme:dark){.ink{stroke:${INK_LIGHT}}}` +
-    '</style>' +
-    body +
-    '</svg>'
-  )
 }
