@@ -17,10 +17,29 @@ ffmpeg_branding = "Chrome"
 # Google's field trial config changes behaviour based on remote state.
 disable_fieldtrial_testing_config = true
 
-# safe_browsing_mode = 0 does not work on its own: several chrome/ targets
-# still depend on the components it removes, and gn fails with unresolved
-# dependencies. Cutting Safe Browsing's phone-home therefore needs a patch,
-# not a flag. Tracked as privacy work; left at the default until then.
+# Safe Browsing is left compiled in, but it does nothing here and should be
+# switched off at the pref rather than the build.
+#
+# safe_browsing_mode defaults to 1 on Windows, so the service runs and standard
+# protection is on. What it cannot do is authenticate. google_api_key defaults
+# to "" and google_apis/BUILD.gn only emits the GOOGLE_API_KEY define when that
+# string is non-empty, so GetAPIKey() falls through to
+# DefaultApiKeys::kUnsetApiToken, which is the literal "dummytoken" rather than
+# an empty string. Every call site guards with if (!api_key.empty()), and
+# "dummytoken" is not empty, so the key is appended and
+# safebrowsing.googleapis.com is asked to honour it.
+#
+# That is the worst of both: on a local-cache miss the request still leaves the
+# machine, carrying our IP and 4-byte SHA256 prefixes of the URL, and the
+# server rejects it, so no verdict ever comes back. Setting google_api_key=""
+# does not help, being already the default.
+#
+# safe_browsing_mode = 0 does remove it, but several chrome/ targets still
+# depend on the components it drops and gn fails with unresolved dependencies;
+# fixing that takes four separate build patches, re-based every four weeks.
+# Defaulting the kSafeBrowsingEnabled pref to false is one line and stops the
+# same traffic, so that is the route to take. Nothing is lost by it: protection
+# that cannot authenticate was never protection.
 
 use_remoteexec = false
 treat_warnings_as_errors = false
