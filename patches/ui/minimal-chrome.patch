@@ -1,0 +1,221 @@
+diff --git a/chrome/browser/ui/layout_constants.cc b/chrome/browser/ui/layout_constants.cc
+index d89ceaf9e4b0c..b521b263cd3da 100644
+--- a/chrome/browser/ui/layout_constants.cc
++++ b/chrome/browser/ui/layout_constants.cc
+@@ -17,6 +17,11 @@
+ #include "chromeos/constants/chromeos_features.h"
+ #endif
+ 
++namespace {
++// Single density knob: gaps in the browser chrome are this or a multiple.
++constexpr int kBasePadding = 3;
++}  // namespace
++
+ int GetLayoutConstant(LayoutConstant constant) {
+   const bool touch_ui = ui::TouchUiController::Get()->touch_ui();
+   switch (constant) {
+@@ -29,7 +34,7 @@ int GetLayoutConstant(LayoutConstant constant) {
+     case LayoutConstant::kBookmarkBarHeight: {
+       // The fixed margin ensures the bookmark buttons appear centered relative
+       // to the white space above and below.
+-      const int bookmark_bar_attached_vertical_margin = 6;
++      const int bookmark_bar_attached_vertical_margin = kBasePadding;
+       return GetLayoutConstant(LayoutConstant::kBookmarkBarButtonHeight) +
+              bookmark_bar_attached_vertical_margin;
+     }
+@@ -52,9 +57,9 @@ int GetLayoutConstant(LayoutConstant constant) {
+     case LayoutConstant::kLocationBarChildInteriorPadding:
+       return 3;
+     case LayoutConstant::kLocationBarChildInternalSpacing:
+-      return touch_ui ? 10 : 4;
++      return touch_ui ? 10 : 7;
+     case LayoutConstant::kLocationBarChildCornerRadius:
+-      return 12;
++      return 6;
+     case LayoutConstant::kLocationBarChipIconSize:
+       return 16;
+     case LayoutConstant::kLocationBarChipPadding:
+@@ -62,7 +67,7 @@ int GetLayoutConstant(LayoutConstant constant) {
+     case LayoutConstant::kLocationBarElementPadding:
+       return touch_ui ? 3 : 2;
+     case LayoutConstant::kLocationBarPageInfoIconVerticalPadding:
+-      return touch_ui ? 3 : 5;
++      return touch_ui ? 3 : 2;
+     case LayoutConstant::kLocationBarPageInfoIconLabelExtraTrailingPadding:
+       return 4;
+     case LayoutConstant::kLocationBarPageInfoIconDangerousLeadingPadding:
+@@ -70,11 +75,11 @@ int GetLayoutConstant(LayoutConstant constant) {
+     case LayoutConstant::kLocationBarPageInfoIconDangerousTrailingPadding:
+       return 10;
+     case LayoutConstant::kLocationBarTrailingDecorationEdgePadding:
+-      return touch_ui ? 3 : 12;
++      return touch_ui ? 3 : 2;
+     case LayoutConstant::kLocationBarTrailingDecorationInnerPadding:
+       return touch_ui ? 3 : 8;
+     case LayoutConstant::kLocationBarHeight:
+-      return touch_ui ? 36 : 34;
++      return touch_ui ? 36 : 28;
+     // LINT.IfChange(LocationBarIconSize)
+     case LayoutConstant::kLocationBarIconSize:
+       return touch_ui ? 20 : 16;
+@@ -86,7 +91,7 @@ int GetLayoutConstant(LayoutConstant constant) {
+     case LayoutConstant::kLocationBarLeadingIconSize:
+       return GetLayoutConstant(LayoutConstant::kLocationBarIconSize);
+     case LayoutConstant::kLocationBarTrailingIconSize:
+-      return 20;
++      return 18;
+     case LayoutConstant::kNewTabButtonLeadingMargin:
+       return 0;
+     case LayoutConstant::kStarRatingIconSize:
+@@ -100,22 +105,22 @@ int GetLayoutConstant(LayoutConstant constant) {
+     case LayoutConstant::kTabCloseButtonSize:
+       return touch_ui ? 24 : (features::IsRoundedIconsEnabled() ? 14 : 16);
+     case LayoutConstant::kTabHeight:
+-      return 34 + GetLayoutConstant(LayoutConstant::kTabstripToolbarOverlap);
++      return 31;
+     case LayoutConstant::kTabStripHeight:
+       return GetLayoutConstant(LayoutConstant::kTabHeight) +
+              GetLayoutConstant(LayoutConstant::kTabStripPadding);
+     case LayoutConstant::kTabStripPadding:
+-      return 6;
++      return kBasePadding;
+     case LayoutConstant::kTabSeparatorHeight:
+       return touch_ui ? 24 : 20;
+     case LayoutConstant::kTabPreTitlePadding:
+-      return 8;
++      return 6;
+     case LayoutConstant::kTabStackDistance:
+       return touch_ui ? 4 : 6;
+     case LayoutConstant::kTabstripToolbarOverlap:
+-      return 1;
++      return 0;
+     case LayoutConstant::kToolbarButtonHeight:
+-      return touch_ui ? 48 : 34;
++      return touch_ui ? 48 : 28;
+     case LayoutConstant::kToolbarButtonIconSize:
+       return touch_ui ? kDefaultTouchableIconSize
+                       : kDefaultIconSizeChromeRefresh;
+@@ -124,15 +129,15 @@ int GetLayoutConstant(LayoutConstant constant) {
+     case LayoutConstant::kToolbarDividerHeight:
+       return touch_ui ? 20 : 16;
+     case LayoutConstant::kToolbarDividerSpacing:
+-      return 9;
++      return kBasePadding * 2;
+     case LayoutConstant::kToolbarDividerWidth:
+-      return 2;
++      return 1;
+     case LayoutConstant::kToolbarElementPadding:
+-      return touch_ui ? 0 : 4;
++      return touch_ui ? 0 : kBasePadding;
+     case LayoutConstant::kToolbarIconDefaultMargin:
+-      return touch_ui ? 0 : 2;
++      return touch_ui ? 0 : kBasePadding;
+     case LayoutConstant::kLocationBarMargin:
+-      return touch_ui ? 12 : 9;
++      return touch_ui ? 12 : kBasePadding * 2;
+     case LayoutConstant::kSidePanelInset:
+       return 8;
+     case LayoutConstant::kPageInfoIconSize:
+@@ -189,13 +194,14 @@ gfx::Insets GetLayoutInsets(LayoutInset inset) {
+       return gfx::Insets::VH(8, 20);
+ 
+     case LOCATION_BAR_ICON_INTERIOR_PADDING:
+-      return gfx::Insets::VH(2, 2);
++      return gfx::Insets::VH(2, 3);
+ 
+     case LOCATION_BAR_PAGE_INFO_ICON_PADDING:
+       return touch_ui ? gfx::Insets::VH(5, 10) : gfx::Insets::VH(4, 4);
+ 
+     case LOCATION_BAR_PAGE_ACTION_ICON_PADDING:
+-      return touch_ui ? gfx::Insets::VH(5, 10) : gfx::Insets::VH(2, 2);
++      return touch_ui ? gfx::Insets::VH(5, 10)
++                      : GetLayoutInsets(LOCATION_BAR_ICON_INTERIOR_PADDING);
+ 
+     case TOOLBAR_ACTION_VIEW: {
+       // TODO(afakhry): Unify all toolbar button sizes on all platforms.
+@@ -204,7 +210,7 @@ gfx::Insets GetLayoutInsets(LayoutInset inset) {
+     }
+ 
+     case TOOLBAR_BUTTON:
+-      return gfx::Insets(touch_ui ? 12 : 7);
++      return gfx::Insets(touch_ui ? 12 : 4);
+ 
+     case BROWSER_APP_MENU_CHIP_PADDING:
+       if (touch_ui) {
+@@ -223,11 +229,12 @@ gfx::Insets GetLayoutInsets(LayoutInset inset) {
+       if (touch_ui) {
+         return GetLayoutInsets(TOOLBAR_BUTTON);
+       } else {
+-        return gfx::Insets::TLBR(7, 10, 7, 4);
++        return gfx::Insets::TLBR(4, 5, 4, 4);
+       }
+ 
+     case TOOLBAR_INTERIOR_MARGIN:
+-      return touch_ui ? gfx::Insets::VH(4, 0) : gfx::Insets::VH(6, 6);
++      return touch_ui ? gfx::Insets::VH(4, 0)
++                      : gfx::Insets::VH(kBasePadding, kBasePadding * 2);
+ 
+     case WEBUI_TAB_STRIP_TOOLBAR_INTERIOR_MARGIN:
+       return gfx::Insets::VH(4, 0);
+diff --git a/chrome/browser/ui/tabs/tab_style.cc b/chrome/browser/ui/tabs/tab_style.cc
+index fbfe095b4c1a3..ded97b72e619e 100644
+--- a/chrome/browser/ui/tabs/tab_style.cc
++++ b/chrome/browser/ui/tabs/tab_style.cc
+@@ -19,8 +19,8 @@ namespace {
+ 
+ // Thickness in DIPs of the separator painted on the left and right edges of
+ // the tab.
+-constexpr int kSeparatorThickness = 2;
+-constexpr int kSeparatorHorizontalMargin = 2;
++constexpr int kSeparatorThickness = 1;
++constexpr int kSeparatorHorizontalMargin = 5;
+ // TODO (crbug.com/40915785): This constant should be in LayoutConstants.
+ constexpr int kSeparatorHeight = 16;
+ 
+@@ -98,11 +98,13 @@ int TabStyle::GetMinimumInactiveWidth() const {
+ }
+ 
+ int TabStyle::GetTopCornerRadius() const {
+-  return 10;
++  return 8;
+ }
+ 
+ int TabStyle::GetBottomCornerRadius() const {
+-  return 12;
++  // Not the painted flare, which is smaller: this also feeds the standard width
++  // and GetTabOverlap(), which goes negative below half the separator width.
++  return 8;
+ }
+ 
+ int TabStyle::GetTabOverlap() const {
+@@ -268,11 +270,10 @@ SkColor TabStyle::GetCurrentTabBackgroundColor(
+ }
+ 
+ gfx::Insets TabStyle::GetContentsInsets() const {
+-  return gfx::Insets::TLBR(
+-      kTabVerticalPadding + GetLayoutConstant(LayoutConstant::kTabStripPadding),
+-      GetBottomCornerRadius() + kTabHorizontalPadding,
+-      kTabVerticalPadding + GetLayoutConstant(LayoutConstant::kTabStripPadding),
+-      GetBottomCornerRadius() + kTabHorizontalPadding);
++  return gfx::Insets::TLBR(kTabVerticalPadding,
++                           GetBottomCornerRadius() + kTabHorizontalPadding,
++                           kTabVerticalPadding,
++                           GetBottomCornerRadius() + kTabHorizontalPadding);
+ }
+ 
+ float TabStyle::GetSelectedTabOpacity() const {
+diff --git a/chrome/browser/ui/views/tabs/tab_style_views.cc b/chrome/browser/ui/views/tabs/tab_style_views.cc
+index ed475c0656008..2a4aa35c3b3a8 100644
+--- a/chrome/browser/ui/views/tabs/tab_style_views.cc
++++ b/chrome/browser/ui/views/tabs/tab_style_views.cc
+@@ -199,7 +199,9 @@ SkPath TabStyleViewsImpl::GetPath(TabStyle::PathType path_type,
+   // tab width (in DIP), not our new, scaled-and-aligned bounds.
+   float content_corner_radius =
+       GetTopCornerRadiusForWidth(tab()->width()) * scale;
+-  float extension_corner_radius = tab_style()->GetBottomCornerRadius() * scale;
++  // Deliberately smaller than GetBottomCornerRadius(), which the layout maths
++  // needs kept large: a shallower flare where the tab meets the toolbar.
++  float extension_corner_radius = 4 * scale;
+ 
+   const float separator_overlap = (tab_style()->GetSeparatorMargins().width() +
+                                    tab_style()->GetSeparatorSize().width()) *
