@@ -1,0 +1,56 @@
+name: checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# A queued run of an outdated commit helps nobody.
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  patches:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Patch series
+        run: python3 utils/check_patches.py
+      - name: Tooling parses
+        run: python3 -m compileall -q utils
+
+  assets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - name: Regenerate from branding/mark.mjs
+        run: bun run utils/make_icons.mjs
+      - name: Generated text matches the committed copy
+        # Only the text artefacts. The PNGs and the .ico go through libvips,
+        # whose output is not guaranteed identical across platforms, so a byte
+        # comparison there would fail on Linux for no real reason.
+        run: |
+          git diff --exit-code -- '*.icon' '*.svg' 'apps/web/lib/mark.ts' \
+            || {
+              echo '::error::Committed icons are stale. Run: bun run utils/make_icons.mjs'
+              exit 1
+            }
+
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun run typecheck
+      - run: bun run web:build
