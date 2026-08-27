@@ -4,12 +4,18 @@
   python3 utils/build.py                       # baseline flags, target chrome
   python3 utils/build.py --flags release
   python3 utils/build.py --gen-only
+  python3 utils/build.py --jobs 16 --no-yield  # take the whole machine
 
 Requires depot_tools on PATH. Output goes to out/<flags> unless --out says
 otherwise, so dev and release builds do not clobber each other.
+
+A release build saturates every core for hours. By default the compiler is
+left four cores and runs below normal priority, so the machine stays usable
+while it works. Pass --no-yield when nobody is at the keyboard.
 """
 
 import argparse
+import os
 import shutil
 import subprocess
 import sys
@@ -17,11 +23,25 @@ import sys
 import config
 import rebrand
 
+# Enough to keep a browser, an editor and a game responsive. Below normal
+# priority alone is not enough: it yields on CPU but the compiler still takes
+# every core's worth of memory bandwidth.
+RESERVED_CORES = 4
 
-def run(cmd: str, cwd) -> int:
+
+def default_jobs() -> int:
+    return max(1, (os.cpu_count() or 8) - RESERVED_CORES)
+
+
+def run(cmd: str, cwd, yield_cpu: bool = False) -> int:
     # gn and autoninja are .bat wrappers, so this goes through the shell.
     print("+ " + cmd)
-    return subprocess.run(cmd, cwd=str(cwd), shell=True).returncode
+    flags = 0
+    if yield_cpu and sys.platform == "win32":
+        # Children inherit it, so the whole compiler fan-out drops with it.
+        flags = subprocess.BELOW_NORMAL_PRIORITY_CLASS
+    return subprocess.run(cmd, cwd=str(cwd), shell=True,
+                          creationflags=flags).returncode
 
 
 def overlay_branding(src) -> int:
@@ -66,6 +86,11 @@ def main() -> int:
     parser.add_argument("--out", help="output dir under out/ (default: same as --flags)")
     parser.add_argument("--target", default="chrome")
     parser.add_argument("--gen-only", action="store_true")
+    parser.add_argument("--jobs", type=int, default=default_jobs(),
+                        help=f"parallel compiles (default: cores minus "
+                             f"{RESERVED_CORES})")
+    parser.add_argument("--no-yield", action="store_true",
+                        help="run at normal priority and take every core")
     args = parser.parse_args()
 
     src = config.require_src()
@@ -98,7 +123,14 @@ def main() -> int:
     if args.gen_only:
         return 0
 
-    return run(f"autoninja -C {out_dir} {args.target}", src)
+    cores = os.cpu_count() or 0
+    if args.no_yield:
+        print(f"jobs     all {cores} core(s), normal priority")
+        return run(f"autoninja -C {out_dir} {args.target}", src)
+
+    print(f"jobs     {args.jobs} of {cores} core(s), below normal priority")
+    return run(f"autoninja -C {out_dir} -j {args.jobs} {args.target}", src,
+               yield_cpu=True)
 
 
 if __name__ == "__main__":
