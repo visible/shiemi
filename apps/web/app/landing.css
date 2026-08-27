@@ -27,17 +27,20 @@
   mask-image: radial-gradient(ellipse at center, #000 26%, transparent 70%);
 }
 
+/* The one thing in the grid that is not a dot. Sized to read as a sibling of
+   the dots rather than a logo dropped on top of them. */
 .you {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 7px;
-  height: 7px;
-  margin: -3.5px 0 0 -3.5px;
-  border-radius: 50%;
-  background: var(--accent);
+  width: 26px;
+  height: 26px;
+  margin: -13px 0 0 -13px;
+  color: var(--accent);
   /* Ground colour, not transparency: punches a hole in the grid behind it. */
-  box-shadow: 0 0 0 7px var(--ground);
+  border-radius: 50%;
+  box-shadow: 0 0 0 6px var(--ground);
+  background: var(--ground);
 }
 
 h1 {

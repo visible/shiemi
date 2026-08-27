@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { MARK_PATHS, MARK_VIEWBOX } from '@/lib/mark'
 import { REPO, X } from '@/lib/site'
 import './landing.css'
 
@@ -11,7 +12,11 @@ export default function Home() {
     <main className="page">
       <div className="stage">
         <div className="field" aria-hidden="true">
-          <span className="you" />
+          <svg className="you" viewBox={MARK_VIEWBOX}>
+            {MARK_PATHS.map((d) => (
+              <path key={d} d={d} fill="currentColor" />
+            ))}
+          </svg>
         </div>
 
         <h1>You’re someone, not a datapoint.</h1>

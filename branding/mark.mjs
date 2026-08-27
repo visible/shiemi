@@ -64,18 +64,22 @@ const projector = (side) => (r, deg) => {
   ]
 }
 
-/** The petals alone, no plate and no wrapper. */
-export function petals({ size = 256, colour = MARK } = {}) {
+export const VIEWBOX = `0 0 ${BOX} ${BOX}`
+
+/** One SVG path string per petal, for callers that draw their own elements. */
+export function paths({ size = 256 } = {}) {
   const geo = geometry(size)
   const at = projector(BOX)
-  return angles()
-    .map((deg) => {
-      const [start, ...rest] = petal(deg, geo).map(([r, d]) => at(r, d).join(' '))
-      return (
-        `<path d="M ${start} C ${rest.slice(0, 3).join(' ')} ` +
-        `C ${rest.slice(3).join(' ')} Z" fill="${colour}"/>`
-      )
-    })
+  return angles().map((deg) => {
+    const [start, ...rest] = petal(deg, geo).map(([r, d]) => at(r, d).join(' '))
+    return `M ${start} C ${rest.slice(0, 3).join(' ')} C ${rest.slice(3).join(' ')} Z`
+  })
+}
+
+/** The petals alone, no plate and no wrapper. */
+export function petals({ size = 256, colour = MARK } = {}) {
+  return paths({ size })
+    .map((d) => `<path d="${d}" fill="${colour}"/>`)
     .join('')
 }
 
