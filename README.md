@@ -6,7 +6,10 @@
 
 > what's different?
 
-  no ads, no tracking, no telemetry.
+  duckduckgo by default.
+  no telemetry, no sign-in, nothing
+  phoned home on startup.
+  content blockers still work.
 
 > status?
 
