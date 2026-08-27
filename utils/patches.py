@@ -4,10 +4,15 @@
   python3 utils/patches.py status
   python3 utils/patches.py apply
   python3 utils/patches.py revert
+  python3 utils/patches.py capture ui/thing.patch chrome/browser/a.cc [...]
 
 Patches are applied in the order given by patches/series and reverted in
 reverse. A dry run happens before anything is written, so a conflict in the
 last patch will not leave the tree half-patched.
+
+Capture writes the working-tree diff for the given Chromium paths to a patch
+file. Use it rather than redirecting git: a shell that rewrites line endings
+produces a patch git refuses to apply, and the failure looks like a conflict.
 """
 
 import argparse
@@ -98,12 +103,48 @@ def cmd_revert(src, patches) -> int:
     return 0
 
 
+def cmd_capture(src, name, paths) -> int:
+    proc = subprocess.run(
+        ["git", "-C", str(src), "diff", "--", *paths],
+        capture_output=True,
+        text=True,
+    )
+    if proc.returncode != 0:
+        print(proc.stderr.strip(), file=sys.stderr)
+        return 1
+    if not proc.stdout.strip():
+        print(f"nothing to capture: no changes under {' '.join(paths)}",
+              file=sys.stderr)
+        return 1
+
+    out = config.PATCHES_DIR / name
+    out.parent.mkdir(parents=True, exist_ok=True)
+    with open(out, "w", encoding="utf-8", newline="\n") as handle:
+        handle.write(proc.stdout)
+
+    files = sum(1 for line in proc.stdout.splitlines()
+                if line.startswith("diff --git "))
+    print(f"wrote {out.relative_to(config.PATCHES_DIR)} ({files} file(s))")
+    if name not in config.read_series():
+        print(f"note: {name} is not in patches/series yet")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=["status", "apply", "revert"])
+    parser.add_argument("action",
+                        choices=["status", "apply", "revert", "capture"])
+    parser.add_argument("name", nargs="?", help="patch path, for capture")
+    parser.add_argument("paths", nargs="*",
+                        help="Chromium paths to diff, for capture")
     args = parser.parse_args()
 
     src = config.require_src()
+
+    if args.action == "capture":
+        if not args.name or not args.paths:
+            raise SystemExit("capture needs a patch name and at least one path")
+        return cmd_capture(src, args.name.replace("\\", "/"), args.paths)
     pinned, actual = config.pinned_version(), config.checkout_version()
     if pinned != actual:
         print(
@@ -116,6 +157,9 @@ def main() -> int:
     return {"status": cmd_status, "apply": cmd_apply, "revert": cmd_revert}[
         args.action
     ](src, patches)
+
+
+
 
 
 if __name__ == "__main__":
