@@ -40,6 +40,13 @@ def overlay_branding(src) -> int:
     pairs += [(p, theme / "win" / p.name)
               for p in sorted((icons / "win").glob("*.ico"))]
 
+    # branding/vector mirrors the Chromium tree, so the relative path is the
+    # destination. These are the product logo drawn in infobars and dialogs,
+    # which comes from .icon sources rather than the theme PNGs.
+    vector = config.ROOT / "branding" / "vector"
+    pairs += [(p, src / p.relative_to(vector))
+              for p in sorted(vector.rglob("*.icon"))]
+
     written = 0
     for source, dest in pairs:
         if not dest.parent.is_dir():

@@ -16,14 +16,19 @@ const BOX = 32
 const MID = BOX / 2
 
 /**
- * Stroke and radius per rendered size rather than one set scaled down. A 16px
- * tray icon gets 1.5 device pixels of stroke from the large-size numbers, which
- * antialiases into a grey smudge; below 20 the ring is drawn heavier so it
- * lands on close to whole pixels.
+ * Stroke, radius and span per rendered size rather than one set scaled down.
+ *
+ * Two things fail if the large-size numbers are simply shrunk. A 16px icon gets
+ * 1.5 device pixels of stroke, which antialiases into a grey smudge, so small
+ * sizes are drawn heavier. And the round caps overhang each arc end by half the
+ * stroke, which leaves a gap of about a third of the stroke width: fine at 8
+ * device pixels, gone below one, at which point the four arcs fuse into a plain
+ * ring and the mark loses its shape. So the span shortens as the size drops,
+ * holding the gap above 1.4 device pixels everywhere.
  */
 function geometry(size) {
-  if (size <= 20) return { radius: 10.4, stroke: 4, span: 64 }
-  if (size <= 32) return { radius: 10.6, stroke: 3.4, span: 66 }
+  if (size <= 20) return { radius: 10.4, stroke: 4, span: 52 }
+  if (size <= 32) return { radius: 10.6, stroke: 3.4, span: 61 }
   return { radius: 10.7, stroke: 3.1, span: 68 }
 }
 
@@ -64,6 +69,50 @@ export function svg({ size = 256, ink = INK_LIGHT, accent = ACCENT, plate = null
     arcs({ size, ink, accent }) +
     '</svg>'
   )
+}
+
+/**
+ * The mark in Chromium's vector icon format, for the product logo drawn in
+ * infobars, dialogs and the omnibox.
+ *
+ * That format fills paths and has no stroke command, so each arc is emitted as
+ * an annular sector closed by a semicircular cap at each end. ARC_TO takes the
+ * SVG argument order: rx, ry, rotation, large-arc, sweep, x, y.
+ *
+ * No colour is emitted. Every surface that draws this tints it to suit the
+ * theme, so a fixed colour would be wrong against one background or the other,
+ * and the accent belongs on the app icon where the backdrop is ours.
+ */
+export function vectorIcon(canvases = [24]) {
+  const sizes = [...canvases].sort((a, b) => b - a)
+  return sizes.map(sector).join('\n') + '\n'
+}
+
+function sector(canvas) {
+  const scale = canvas / BOX
+  const { radius, span, stroke } = geometry(canvas)
+  const cap = (stroke * scale) / 2
+  const outer = radius * scale + cap
+  const inner = radius * scale - cap
+  const centre = canvas / 2
+  const at = (r, deg) =>
+    `${fixed(centre + r * Math.cos(rad(deg)))}, ${fixed(centre + r * Math.sin(rad(deg)))}`
+
+  const lines = [`CANVAS_DIMENSIONS, ${canvas},`]
+  for (const i of [0, 1, 2, 3]) {
+    const from = -90 + i * 90 - span / 2
+    const to = -90 + i * 90 + span / 2
+    lines.push(
+      `MOVE_TO, ${at(outer, from)},`,
+      `ARC_TO, ${fixed(outer)}, ${fixed(outer)}, 0, 0, 1, ${at(outer, to)},`,
+      `ARC_TO, ${fixed(cap)}, ${fixed(cap)}, 0, 0, 1, ${at(inner, to)},`,
+      `ARC_TO, ${fixed(inner)}, ${fixed(inner)}, 0, 0, 0, ${at(inner, from)},`,
+      `ARC_TO, ${fixed(cap)}, ${fixed(cap)}, 0, 0, 1, ${at(outer, from)},`,
+      'CLOSE,',
+    )
+  }
+  lines[lines.length - 1] = 'CLOSE'
+  return lines.join('\n')
 }
 
 /**
