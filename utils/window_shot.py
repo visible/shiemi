@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 """Capture one window's pixels and nothing else.
 
-  python3 utils/window_shot.py shot.png
+  python3 utils/window_shot.py shot.png --pid 1234
   python3 utils/window_shot.py shot.png --title shiemi --crop-height 120
 
 UI work has to be checked by looking at it, but a full-screen grab records
 whatever else is open and needs the window in the foreground. PrintWindow asks
 the window to draw itself, so it needs neither.
+
+Prefer --pid: a title match will happily find an editor with the product name
+in its tab, and the largest window wins.
 
 PNG is written by hand to keep this dependency free; --crop-height is there
 because the tab strip is the top inch of the window.
@@ -67,8 +70,14 @@ user32.ReleaseDC.argtypes = [wintypes.HWND, ctypes.c_void_p]
 user32.ReleaseDC.restype = ctypes.c_int
 
 
-def find_window(needle: str):
-    needle = needle.lower()
+def owner_pid(hwnd) -> int:
+    pid = wintypes.DWORD()
+    user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+    return pid.value
+
+
+def find_window(needle: str | None = None, pid: int | None = None):
+    needle = needle.lower() if needle else None
     matches = []
 
     @ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
@@ -80,10 +89,13 @@ def find_window(needle: str):
             return True
         buffer = ctypes.create_unicode_buffer(length + 1)
         user32.GetWindowTextW(hwnd, buffer, length + 1)
-        if needle in buffer.value.lower():
-            rect = wintypes.RECT()
-            user32.GetWindowRect(hwnd, ctypes.byref(rect))
-            matches.append((hwnd, buffer.value, rect))
+        if needle and needle not in buffer.value.lower():
+            return True
+        if pid is not None and owner_pid(hwnd) != pid:
+            return True
+        rect = wintypes.RECT()
+        user32.GetWindowRect(hwnd, ctypes.byref(rect))
+        matches.append((hwnd, buffer.value, rect))
         return True
 
     user32.EnumWindows(visit, 0)
@@ -149,15 +161,19 @@ def write_png(path: Path, width: int, height: int, bgra: bytes) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("out", type=Path)
-    parser.add_argument("--title", default="shiemi",
-                        help="substring of the window title")
+    parser.add_argument("--title", help="substring of the window title")
+    parser.add_argument("--pid", type=int,
+                        help="only match windows owned by this process")
     parser.add_argument("--crop-height", type=int,
                         help="keep only this many rows from the top")
     args = parser.parse_args()
 
-    match = find_window(args.title)
+    if not args.title and args.pid is None:
+        raise SystemExit("pass --title, --pid or both")
+
+    match = find_window(args.title, args.pid)
     if not match:
-        raise SystemExit(f"no visible window with {args.title!r} in the title")
+        raise SystemExit("no visible window matched")
 
     hwnd, title, rect = match
     width, height, pixels = capture(hwnd, rect)
