@@ -1,28 +1,27 @@
 #!/usr/bin/env node
 /**
- * Generate the branding icon set from branding/mark.png.
+ * Generate every icon surface from branding/mark.mjs.
  *
  *   bun utils/make_icons.mjs
  *
- * Output goes to branding/icons/ and is committed, so a build never needs an
- * image library: utils/build.py only copies the files into the Chromium tree.
- * Re-run this only when the master art changes.
+ * Writes the browser icon set to branding/icons/ and the site icons into
+ * apps/web/app/. Both are committed, so neither a build nor a deploy needs an
+ * image library: utils/build.py only copies files into the Chromium tree.
+ * Re-run this when the mark changes.
+ *
+ * Each size is rendered from the mark at that size rather than downscaled from
+ * one master, so the antialiasing is computed for the pixels it will occupy.
  */
 
 import { Buffer } from 'node:buffer'
 import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import sharp from 'sharp'
+import { INK_LIGHT, PLATE, svg, themedSvg } from '../branding/mark.mjs'
 
 const ROOT = path.resolve(import.meta.dirname, '..')
-const MASTER = path.join(ROOT, 'branding', 'mark.png')
 const OUT = path.join(ROOT, 'branding', 'icons')
-
-// Windows draws app icons edge to edge, but the mark is a figure rather than a
-// glyph and reads as cramped without a little room. At or below 24px every pixel
-// counts more than the breathing room does, so those go full bleed.
-const MARGIN = 0.06
-const TIGHT_AT_OR_BELOW = 24
+const WEB = path.join(ROOT, 'apps', 'web', 'app')
 
 // Sizes small enough that a BMP payload stays cheap. Windows has read PNG
 // payloads since Vista, so the large ones go in as PNG to keep the file small.
@@ -33,23 +32,10 @@ const ICO_PNG = [128, 256]
 // no .grd reference is left dangling.
 const LOGOS = [16, 24, 48, 64, 128, 256]
 
-async function squared(margin) {
-  const trimmed = await sharp(MASTER).trim().toBuffer({ resolveWithObject: true })
-  const { width, height } = trimmed.info
-  const side = Math.round(Math.max(width, height) * (1 + margin * 2))
-  const pad = (n) => Math.floor((side - n) / 2)
-
-  return sharp({
-    create: {
-      width: side,
-      height: side,
-      channels: 4,
-      background: { r: 0, g: 0, b: 0, alpha: 0 },
-    },
-  })
-    .composite([{ input: trimmed.data, top: pad(height), left: pad(width) }])
-    .png()
-    .toBuffer()
+/** Rasterise the mark at its final size. */
+function draw(size, options = {}) {
+  const markup = svg({ size, ...options })
+  return sharp(Buffer.from(markup), { density: 2400 }).resize(size, size)
 }
 
 function icoDirEntry(size, bytes, offset) {
@@ -96,12 +82,14 @@ async function buildIco() {
   const payloads = []
 
   for (const size of ICO_BMP) {
-    const { data } = await scaled(size).raw().toBuffer({ resolveWithObject: true })
+    const { data } = await draw(size, { plate: PLATE })
+      .raw()
+      .toBuffer({ resolveWithObject: true })
     payloads.push({ size, data: bmpPayload(data, size) })
   }
 
   for (const size of ICO_PNG) {
-    const data = await scaled(size).png({ compressionLevel: 9 }).toBuffer()
+    const data = await draw(size, { plate: PLATE }).png({ compressionLevel: 9 }).toBuffer()
     payloads.push({ size, data })
   }
 
@@ -119,31 +107,35 @@ async function buildIco() {
   return Buffer.concat([header, ...entries, ...payloads.map((p) => p.data)])
 }
 
-const padded = await squared(MARGIN)
-const tight = await squared(0)
-
-/** Downscale from whichever framing suits the size, sharpening the tiny ones. */
-function scaled(size) {
-  const small = size <= TIGHT_AT_OR_BELOW
-  const pipe = sharp(small ? tight : padded).resize(size, size, {
-    kernel: 'lanczos3',
-  })
-  return small ? pipe.sharpen({ sigma: 0.6 }) : pipe
-}
+const report = (name, bytes) => console.log(`  ${name.padEnd(26)}${bytes} bytes`)
 
 await mkdir(path.join(OUT, 'win'), { recursive: true })
 
 const ico = await buildIco()
 await writeFile(path.join(OUT, 'win', 'chromium.ico'), ico)
-console.log(`  chromium.ico          ${ICO_BMP.length + ICO_PNG.length} images  ${ico.length} bytes`)
+console.log(`  chromium.ico            ${ICO_BMP.length + ICO_PNG.length} images  ${ico.length} bytes`)
 
 for (const size of LOGOS) {
-  const data = await scaled(size).png({ compressionLevel: 9 }).toBuffer()
+  const data = await draw(size, { plate: PLATE }).png({ compressionLevel: 9 }).toBuffer()
   await writeFile(path.join(OUT, `product_logo_${size}.png`), data)
-  console.log(`  product_logo_${size}.png`.padEnd(26) + `${data.length} bytes`)
+  report(`product_logo_${size}.png`, data.length)
 }
 
-// Tray and status surfaces expect a single-colour mark.
-const mono = await scaled(22).greyscale().png({ compressionLevel: 9 }).toBuffer()
+// Tray and status surfaces expect a single-colour mark, so the accent drops out
+// and the plate with it.
+const mono = await draw(22, { ink: INK_LIGHT, accent: null })
+  .png({ compressionLevel: 9 })
+  .toBuffer()
 await writeFile(path.join(OUT, 'product_logo_22_mono.png'), mono)
-console.log(`  product_logo_22_mono.png`.padEnd(26) + `${mono.length} bytes`)
+report('product_logo_22_mono.png', mono.length)
+
+// The favicon ships as SVG so the ink can follow the tab strip's scheme. Apple
+// touch icons cannot, and are composited on an unknown colour, so that one
+// keeps its plate.
+const favicon = themedSvg()
+await writeFile(path.join(WEB, 'icon.svg'), `${favicon}\n`)
+report('app/icon.svg', favicon.length + 1)
+
+const apple = await draw(180, { plate: PLATE }).png({ compressionLevel: 9 }).toBuffer()
+await writeFile(path.join(WEB, 'apple-icon.png'), apple)
+report('app/apple-icon.png', apple.length)

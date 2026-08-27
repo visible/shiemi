@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   description: DESCRIPTION,
   applicationName: 'shiemi',
   robots: { index: true, follow: true },
-  // Icons come from app/icon.png and app/apple-icon.png by file convention; an
+  // Icons come from app/icon.svg and app/apple-icon.png by file convention; an
   // icons entry here would emit a second, competing link tag.
   openGraph: {
     type: 'website',
