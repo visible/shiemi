@@ -1,5 +1,5 @@
 diff --git a/chrome/browser/ui/layout_constants.cc b/chrome/browser/ui/layout_constants.cc
-index d89ceaf9e4b0c..b521b263cd3da 100644
+index d89ceaf9e4b0c..b1c8c01ff562f 100644
 --- a/chrome/browser/ui/layout_constants.cc
 +++ b/chrome/browser/ui/layout_constants.cc
 @@ -17,6 +17,11 @@
@@ -8,7 +8,7 @@ index d89ceaf9e4b0c..b521b263cd3da 100644
  
 +namespace {
 +// Single density knob: gaps in the browser chrome are this or a multiple.
-+constexpr int kBasePadding = 3;
++constexpr int kBasePadding = 2;
 +}  // namespace
 +
  int GetLayoutConstant(LayoutConstant constant) {
@@ -54,7 +54,7 @@ index d89ceaf9e4b0c..b521b263cd3da 100644
        return touch_ui ? 3 : 8;
      case LayoutConstant::kLocationBarHeight:
 -      return touch_ui ? 36 : 34;
-+      return touch_ui ? 36 : 28;
++      return touch_ui ? 36 : 24;
      // LINT.IfChange(LocationBarIconSize)
      case LayoutConstant::kLocationBarIconSize:
        return touch_ui ? 20 : 16;
@@ -63,16 +63,16 @@ index d89ceaf9e4b0c..b521b263cd3da 100644
        return GetLayoutConstant(LayoutConstant::kLocationBarIconSize);
      case LayoutConstant::kLocationBarTrailingIconSize:
 -      return 20;
-+      return 18;
++      return 16;
      case LayoutConstant::kNewTabButtonLeadingMargin:
        return 0;
      case LayoutConstant::kStarRatingIconSize:
-@@ -100,22 +105,22 @@ int GetLayoutConstant(LayoutConstant constant) {
+@@ -100,39 +105,40 @@ int GetLayoutConstant(LayoutConstant constant) {
      case LayoutConstant::kTabCloseButtonSize:
        return touch_ui ? 24 : (features::IsRoundedIconsEnabled() ? 14 : 16);
      case LayoutConstant::kTabHeight:
 -      return 34 + GetLayoutConstant(LayoutConstant::kTabstripToolbarOverlap);
-+      return 31;
++      return 28;
      case LayoutConstant::kTabStripHeight:
        return GetLayoutConstant(LayoutConstant::kTabHeight) +
               GetLayoutConstant(LayoutConstant::kTabStripPadding);
@@ -91,11 +91,15 @@ index d89ceaf9e4b0c..b521b263cd3da 100644
 +      return 0;
      case LayoutConstant::kToolbarButtonHeight:
 -      return touch_ui ? 48 : 34;
-+      return touch_ui ? 48 : 28;
++      // Must stay at least 8 above kToolbarButtonIconSize, or the button
++      // overflows and paints as a filled white box instead of its icon.
++      return touch_ui ? 48 : 24;
      case LayoutConstant::kToolbarButtonIconSize:
-       return touch_ui ? kDefaultTouchableIconSize
-                       : kDefaultIconSizeChromeRefresh;
-@@ -124,15 +129,15 @@ int GetLayoutConstant(LayoutConstant constant) {
+-      return touch_ui ? kDefaultTouchableIconSize
+-                      : kDefaultIconSizeChromeRefresh;
++      return touch_ui ? kDefaultTouchableIconSize : 16;
+     case LayoutConstant::kToolbarDividerCornerRadius:
+       return 1;
      case LayoutConstant::kToolbarDividerHeight:
        return touch_ui ? 20 : 16;
      case LayoutConstant::kToolbarDividerSpacing:
@@ -116,7 +120,7 @@ index d89ceaf9e4b0c..b521b263cd3da 100644
      case LayoutConstant::kSidePanelInset:
        return 8;
      case LayoutConstant::kPageInfoIconSize:
-@@ -189,13 +194,14 @@ gfx::Insets GetLayoutInsets(LayoutInset inset) {
+@@ -189,13 +195,14 @@ gfx::Insets GetLayoutInsets(LayoutInset inset) {
        return gfx::Insets::VH(8, 20);
  
      case LOCATION_BAR_ICON_INTERIOR_PADDING:
@@ -133,7 +137,7 @@ index d89ceaf9e4b0c..b521b263cd3da 100644
  
      case TOOLBAR_ACTION_VIEW: {
        // TODO(afakhry): Unify all toolbar button sizes on all platforms.
-@@ -204,7 +210,7 @@ gfx::Insets GetLayoutInsets(LayoutInset inset) {
+@@ -204,7 +211,7 @@ gfx::Insets GetLayoutInsets(LayoutInset inset) {
      }
  
      case TOOLBAR_BUTTON:
@@ -142,7 +146,7 @@ index d89ceaf9e4b0c..b521b263cd3da 100644
  
      case BROWSER_APP_MENU_CHIP_PADDING:
        if (touch_ui) {
-@@ -223,11 +229,12 @@ gfx::Insets GetLayoutInsets(LayoutInset inset) {
+@@ -223,11 +230,12 @@ gfx::Insets GetLayoutInsets(LayoutInset inset) {
        if (touch_ui) {
          return GetLayoutInsets(TOOLBAR_BUTTON);
        } else {
@@ -158,10 +162,10 @@ index d89ceaf9e4b0c..b521b263cd3da 100644
      case WEBUI_TAB_STRIP_TOOLBAR_INTERIOR_MARGIN:
        return gfx::Insets::VH(4, 0);
 diff --git a/chrome/browser/ui/tabs/tab_style.cc b/chrome/browser/ui/tabs/tab_style.cc
-index fbfe095b4c1a3..ded97b72e619e 100644
+index fbfe095b4c1a3..964b680e2ca7f 100644
 --- a/chrome/browser/ui/tabs/tab_style.cc
 +++ b/chrome/browser/ui/tabs/tab_style.cc
-@@ -19,8 +19,8 @@ namespace {
+@@ -19,10 +19,10 @@ namespace {
  
  // Thickness in DIPs of the separator painted on the left and right edges of
  // the tab.
@@ -170,8 +174,11 @@ index fbfe095b4c1a3..ded97b72e619e 100644
 +constexpr int kSeparatorThickness = 1;
 +constexpr int kSeparatorHorizontalMargin = 5;
  // TODO (crbug.com/40915785): This constant should be in LayoutConstants.
- constexpr int kSeparatorHeight = 16;
+-constexpr int kSeparatorHeight = 16;
++constexpr int kSeparatorHeight = 14;
  
+ // The padding from the top of the tab to the content area.
+ constexpr int kTabVerticalPadding = 6;
 @@ -98,11 +98,13 @@ int TabStyle::GetMinimumInactiveWidth() const {
  }
  
