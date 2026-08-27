@@ -23,8 +23,10 @@ disappearing as the real signal.
 --headless reports the same hosts and counts as a windowed run, so prefer it:
 nothing takes focus while the audit is running.
 
-Exit code is 1 if any host outside --allow was contacted, so this can gate a
-release once the expected set is settled.
+Exit code is 1 if any host outside the allowed set was contacted, so this can
+gate a release. Prefer --baseline over --allow for that: the expected hosts
+then live in a reviewed file, and adding one shows up in a diff with the
+reason next to it.
 """
 
 import argparse
@@ -41,6 +43,7 @@ from urllib.parse import urlparse
 import config
 
 DEFAULT_BINARY = config.CHROMIUM_SRC / "out" / "baseline" / "chrome.exe"
+DEFAULT_BASELINE = config.ROOT / "tests" / "network-allowed.txt"
 ANNOTATIONS = (config.CHROMIUM_SRC / "tools" / "traffic_annotation" / "summary"
                / "annotations.xml")
 
@@ -54,6 +57,17 @@ URL_REQUEST_SOURCE = 1
 ITEM_PATTERN = re.compile(r'<item id="([^"]+)"[^>]*?file_path="([^"]*)"')
 
 UNANNOTATED = "(unannotated)"
+
+
+def read_baseline(path: Path) -> list:
+    if not path.exists():
+        raise SystemExit(f"no baseline at {path}")
+    hosts = []
+    for raw in path.read_text(encoding="utf-8").splitlines():
+        line = raw.split("#", 1)[0].strip()
+        if line:
+            hosts.append(line)
+    return hosts
 
 
 def annotation_hash(name: str) -> int:
@@ -145,6 +159,11 @@ def main() -> int:
     parser.add_argument("--allow", action="extend", nargs="*", default=[],
                         help="hosts that are expected and should not fail; "
                              "repeatable, and accepts several per flag")
+    parser.add_argument("--baseline", nargs="?", type=Path,
+                        const=DEFAULT_BASELINE, metavar="FILE",
+                        help=f"read the allowed hosts from a file instead, "
+                             f"one per line with # comments "
+                             f"(default: {DEFAULT_BASELINE.name})")
     parser.add_argument("--urls", action="store_true",
                         help="also list the endpoint paths per host")
     parser.add_argument("--flag", action="append", default=[], metavar="ARG",
@@ -155,6 +174,10 @@ def main() -> int:
     args = parser.parse_args()
 
     flags = args.flag + (["--headless"] if args.headless else [])
+
+    allowed = list(args.allow)
+    if args.baseline:
+        allowed += read_baseline(args.baseline)
 
     if not args.binary.exists():
         raise SystemExit(f"no browser at {args.binary} - build it first")
@@ -190,7 +213,7 @@ def main() -> int:
         return 0
 
     def is_allowed(host: str) -> bool:
-        return any(host == a or host.endswith(f".{a}") for a in args.allow)
+        return any(host == a or host.endswith(f".{a}") for a in allowed)
 
     width = max(len(host) for host in counts)
     unexpected = []
@@ -211,8 +234,9 @@ def main() -> int:
                 print(f"        {n:>3}  {endpoint}")
 
     print(f"\n{len(counts)} hosts, {sum(counts.values())} requests")
-    if args.allow and unexpected:
-        print(f"{len(unexpected)} not in --allow")
+    if allowed and unexpected:
+        source = args.baseline if args.baseline else "--allow"
+        print(f"{len(unexpected)} not in {source}")
         return 1
     return 0
 

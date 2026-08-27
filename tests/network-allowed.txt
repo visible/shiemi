@@ -1,0 +1,11 @@
+# Hosts the browser is allowed to contact on its own, with no user action.
+#
+#   python3 utils/audit_network.py --headless --baseline
+#
+# Anything contacted but not listed here fails the audit. The list starts
+# empty on purpose: an idle browser on a cold profile should reach nothing at
+# all, so every entry is a concession and needs a reason beside it saying why
+# it cannot be removed. Deleting a line is the goal; adding one needs an
+# argument.
+#
+# One host per line. A bare domain also covers its subdomains.
