@@ -25,6 +25,16 @@ disable_fieldtrial_testing_config = true
 use_remoteexec = false
 treat_warnings_as_errors = false
 
-# Performance work goes here once there are benchmark numbers to justify it.
-# An AVX2 baseline is the first candidate: stock Chrome targets SSE3 for
-# compatibility with 2005-era CPUs, which we do not need to support.
+# is_official_build carries the optimisation work: full LTO plus PGO against
+# chrome/build/pgo_profiles, which the checkout already fetches because
+# .gclient sets checkout_pgo_profiles. This is the measurable win and it costs
+# no patch.
+#
+# An AVX2 baseline was the next candidate and is on hold. There is no GN
+# argument for it: this Chromium declares neither extra_cflags nor an ISA-level
+# arg, so raising the baseline means patching build/config/compiler. Against
+# that, the hot SIMD paths in Skia, V8, libvpx and dav1d already dispatch on
+# AVX2 at runtime whatever the compile baseline, and a raised baseline makes
+# the binary refuse to start on any pre-2013 CPU. A patch with a permanent
+# rebase cost, an unmeasured gain and a hard compatibility floor is the wrong
+# trade until benchmarks say otherwise.
