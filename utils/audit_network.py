@@ -142,8 +142,9 @@ def main() -> int:
     parser.add_argument("--url", default="about:blank",
                         help="page to open; defaults to a blank tab so the "
                              "only traffic is the browser's own")
-    parser.add_argument("--allow", nargs="*", default=[],
-                        help="hosts that are expected and should not fail")
+    parser.add_argument("--allow", action="extend", nargs="*", default=[],
+                        help="hosts that are expected and should not fail; "
+                             "repeatable, and accepts several per flag")
     parser.add_argument("--urls", action="store_true",
                         help="also list the endpoint paths per host")
     parser.add_argument("--flag", action="append", default=[], metavar="ARG",
