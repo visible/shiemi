@@ -23,6 +23,7 @@ privacy/duckduckgo-default.patch
 ui/no-default-browser-prompt.patch
 ui/trim-app-menu.patch
 ui/trim-settings-sections.patch
+ui/no-avatar-button.patch
 ui/minimal-chrome.patch
 ui/brand-theme.patch
 ui/minimal-new-tab-page.patch
