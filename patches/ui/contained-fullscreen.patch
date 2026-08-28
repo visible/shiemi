@@ -1,20 +1,3 @@
-diff --git a/chrome/app/settings_strings.grdp b/chrome/app/settings_strings.grdp
-index 763bba112d55b..40b765837e2d6 100644
---- a/chrome/app/settings_strings.grdp
-+++ b/chrome/app/settings_strings.grdp
-@@ -277,6 +277,12 @@
-     <message name="IDS_SETTINGS_SHOW_TAB_SEARCH_BUTTON" desc="Label for the checkbox which enables or disables showing the tab search button in the tab strip.">
-       Show tab search button
-     </message>
-+    <message name="IDS_SETTINGS_CONTAINED_FULLSCREEN" desc="Label for the checkbox which keeps a page's full screen inside the browser window instead of taking over the whole screen.">
-+      Keep full screen inside the window
-+    </message>
-+    <message name="IDS_SETTINGS_CONTAINED_FULLSCREEN_DESC" desc="Description for the checkbox which keeps a page's full screen inside the browser window instead of taking over the whole screen.">
-+      A video going full screen fills the tab rather than the whole display, so the rest of your desktop stays where it is
-+    </message>
-     <message name="IDS_SETTINGS_SHOW_PROJECTS_PANEL_BUTTON" desc="Label for the checkbox which enables or disables showing the projects panel button in the tab strip.">
-       Show organizer button
-     </message>
 diff --git a/chrome/browser/extensions/api/settings_private/prefs_util.cc b/chrome/browser/extensions/api/settings_private/prefs_util.cc
 index 09bec76bcb0bf..4e9a437ac4d7d 100644
 --- a/chrome/browser/extensions/api/settings_private/prefs_util.cc
@@ -103,18 +86,26 @@ index f597f2282a9e9..0c19ed375b04e 100644
        FullscreenWithinTabHelper::FromWebContents(web_contents)
            ->SetIsFullscreenWithinTab(true);
 diff --git a/chrome/browser/ui/webui/settings/settings_localized_strings_provider.cc b/chrome/browser/ui/webui/settings/settings_localized_strings_provider.cc
-index d21c249464c61..2251dc06b9b6f 100644
+index d21c249464c61..e789e66ed3271 100644
 --- a/chrome/browser/ui/webui/settings/settings_localized_strings_provider.cc
 +++ b/chrome/browser/ui/webui/settings/settings_localized_strings_provider.cc
-@@ -573,6 +573,8 @@ void AddAppearanceStrings(content::WebUIDataSource* html_source,
-        IDS_SETTINGS_BOOKMARKS_BAR_ONLY_SHOW_ON_NTP},
-       {"bookmarksBarAlwaysHide", IDS_SETTINGS_BOOKMARKS_BAR_ALWAYS_HIDE},
-       {"showTabSearchButton", IDS_SETTINGS_SHOW_TAB_SEARCH_BUTTON},
-+      {"containedFullscreen", IDS_SETTINGS_CONTAINED_FULLSCREEN},
-+      {"containedFullscreenDesc", IDS_SETTINGS_CONTAINED_FULLSCREEN_DESC},
-       {"showProjectsPanelButton", IDS_SETTINGS_SHOW_PROJECTS_PANEL_BUTTON},
-       {"showEverythingMenuButton", IDS_SETTINGS_SHOW_EVERYTHING_MENU_BUTTON},
-       {"tabStripPosition", IDS_SETTINGS_TAB_STRIP_POSITION},
+@@ -634,6 +634,16 @@ void AddAppearanceStrings(content::WebUIDataSource* html_source,
+   };
+   html_source->AddLocalizedStrings(kLocalizedStrings);
+ 
++  // Our own strings, not upstream's, so they are not in a .grd: settings_strings
++  // is rewritten wholesale at build time to carry the product name, and a hunk
++  // in there would be discarded by that step.
++  html_source->AddString("containedFullscreen",
++                         u"Keep full screen inside the window");
++  html_source->AddString(
++      "containedFullscreenDesc",
++      u"A video going full screen fills the tab rather than the whole display, "
++      u"so the rest of your desktop stays where it is");
++
+   html_source->AddBoolean("ntpSimplificationBookmarksBarEnabled",
+                           base::FeatureList::IsEnabled(
+                               ntp_features::kNtpSimplificationBookmarkBar));
 diff --git a/chrome/common/pref_names.h b/chrome/common/pref_names.h
 index 7f2ccebd7e501..ac6146716fe06 100644
 --- a/chrome/common/pref_names.h
