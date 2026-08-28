@@ -1,0 +1,28 @@
+diff --git a/chrome/browser/ui/startup/default_browser_prompt/default_browser_prompt.cc b/chrome/browser/ui/startup/default_browser_prompt/default_browser_prompt.cc
+index 8e37dc9050a71..aa0455103a06c 100644
+--- a/chrome/browser/ui/startup/default_browser_prompt/default_browser_prompt.cc
++++ b/chrome/browser/ui/startup/default_browser_prompt/default_browser_prompt.cc
+@@ -41,13 +41,16 @@ namespace {
+ // Do not show the prompt if "suppress_default_browser_prompt_for_version" in
+ // the initial preferences is set to the current version.
+ bool ShouldShowDefaultBrowserPromptForCurrentVersion() {
+-  const std::string disable_version_string =
+-      g_browser_process->local_state()->GetString(
+-          prefs::kBrowserSuppressDefaultBrowserPrompt);
+-  const base::Version disable_version(disable_version_string);
+-  DCHECK(disable_version_string.empty() || disable_version.IsValid());
+-  return !(disable_version.IsValid() &&
+-           disable_version == version_info::GetVersion());
++  // Suppressed unconditionally: settings keeps its own "Make default" button,
++  // so only the unprompted nag goes away. Gating here rather than earlier
++  // leaves the rest of the flow intact, including resetting the prompt prefs
++  // once we are the default browser.
++  //
++  // The two pref-only routes both fall short. The initial_preferences key
++  // named above matches one exact version string, so the nag would return on
++  // every Chromium bump, and the durable declined count lives in local state,
++  // which initial_preferences cannot write.
++  return false;
+ }
+ 
+ void OnCheckIsDefaultBrowserFinished(
