@@ -14,7 +14,12 @@ is_official_build = true
 proprietary_codecs = true
 ffmpeg_branding = "Chrome"
 
-# Google's field trial config changes behaviour based on remote state.
+# testing/variations/fieldtrial_testing_config.json is compiled into the binary
+# and force-enables 1503 experiment groups, overriding what the source says.
+# So a feature marked FEATURE_DISABLED_BY_DEFAULT still ships on: the sign-in
+# promo pill is kSigninPromoOnAvatarPill, disabled in signin_switches.cc, and
+# enabled for Windows by that JSON. Without this arg the shipped defaults are
+# not the ones anyone reading the code would expect.
 disable_fieldtrial_testing_config = true
 
 # Safe Browsing is left compiled in, but it does nothing here and should be
