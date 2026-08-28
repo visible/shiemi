@@ -15,3 +15,8 @@ change.
 | `safebrowsing.enhanced` | Set alongside so neither tier can be left on by a stale profile. |
 | `profile.cookie_controls_mode` | `1` is `kBlockThirdParty`. Chromium ships `2`, `kIncognitoOnly`, which allows third-party cookies in ordinary browsing. |
 | `https_first_balanced_mode_enabled` | Upgrades navigations to HTTPS without the hard failure of full HTTPS-Only. Chromium decides this with a "typically secure user" heuristic, but skips the heuristic entirely once the pref has a value, so setting it makes the behaviour deterministic. |
+| `hide_web_store_icon` | `top_sites_factory.cc` prepopulates the new tab page with a Web Store tile on every fresh profile, and `extension_ui_util.cc` puts the same icon in the app launcher. Both read this pref, so one line removes both. |
+
+`initial_preferences` seeds the default profile only. A profile the user creates
+later falls back to the registered default, so anything that has to hold
+unconditionally needs the registered default changed instead.
