@@ -49,10 +49,25 @@ disable_fieldtrial_testing_config = true
 use_remoteexec = false
 treat_warnings_as_errors = false
 
-# is_official_build carries the optimisation work: full LTO plus PGO against
-# chrome/build/pgo_profiles, which the checkout already fetches because
-# .gclient sets checkout_pgo_profiles. This is the measurable win and it costs
-# no patch.
+# is_official_build carries the optimisation work, and it was checked at the
+# compiler rather than inferred from the gn logic. A live clang-cl command line
+# in this configuration carries:
+#
+#   -fprofile-use=chrome/build/pgo_profiles/chrome-win64-7922-*.profdata
+#   -flto=thin
+#   /O2 /clang:-O2 /Oy-
+#
+# The profile is branch-matched: 7922 is this pinned Chromium, so the sample
+# data describes the code actually being compiled.
+#
+# is_official_build also settles three arguments that would otherwise look like
+# things to set by hand. chrome_pgo_phase reaches 2 only when dcheck_always_on
+# is false, which is_official_build already makes it, so PGO and DCHECKs are one
+# decision rather than two. optimize_webui is !is_debug, so already on. NaCl is
+# no longer in the tree to switch off.
+#
+# There is nothing further to gain from gn arguments here. Anything beyond this
+# has to come from measurement, not flags.
 #
 # An AVX2 baseline was the next candidate and is on hold. There is no GN
 # argument for it: this Chromium declares neither extra_cflags nor an ISA-level
