@@ -13,8 +13,10 @@ import re
 import sys
 
 import config
+import rebrand
 
 HUNK = re.compile(r"^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@")
+TOUCHES = re.compile(r"^\+\+\+ b/(.+)$", re.MULTILINE)
 
 
 def check_series(problems: list[str]) -> list[str]:
@@ -99,6 +101,20 @@ def check_hunks(entry: str, text: str, problems: list[str]) -> None:
         problems.append(f"{entry}: no hunks")
 
 
+def check_rebrand_collision(entry: str, text: str, problems: list[str]) -> None:
+    """No patch may touch a file rebrand.py restores from upstream.
+
+    The restore is a git checkout, so it discards the patch silently and the
+    build then fails hours later on a string id that no longer exists.
+    """
+    for path in TOUCHES.findall(text):
+        if rebrand.owns(path.strip()):
+            problems.append(
+                f"{entry}: patches {path.strip()}, which rebrand.py restores"
+                " from upstream before rewriting it"
+            )
+
+
 def main() -> int:
     problems: list[str] = []
     entries = check_series(problems)
@@ -108,8 +124,10 @@ def main() -> int:
         if not path.exists():
             continue
         raw = path.read_bytes()
+        text = raw.decode("utf-8", "replace")
         check_endings(entry, raw, problems)
-        check_hunks(entry, raw.decode("utf-8", "replace"), problems)
+        check_hunks(entry, text, problems)
+        check_rebrand_collision(entry, text, problems)
 
     if problems:
         for problem in problems:
