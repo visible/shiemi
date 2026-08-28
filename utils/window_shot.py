@@ -11,6 +11,10 @@ the window to draw itself, so it needs neither.
 Prefer --pid: a title match will happily find an editor with the product name
 in its tab, and the largest window wins.
 
+A browser launched behind another window comes back as a blank rectangle:
+Chromium stops painting a window it believes is occluded. Launch it with
+--disable-features=CalculateNativeWinOcclusion to capture without raising it.
+
 PNG is written by hand to keep this dependency free; --crop-height is there
 because the tab strip is the top inch of the window.
 """
