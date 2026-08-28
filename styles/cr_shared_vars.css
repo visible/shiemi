@@ -1,0 +1,169 @@
+/* Shiemi WebUI palette and density.
+
+   Appended to Chromium's own token file at build time rather than replacing
+   it, so upstream can churn freely and only the block below has to hold.
+
+   These override the --cr-fallback-color-* set rather than the --color-*
+   pipeline, because in this build the pipeline never reaches these pages:
+   every WebUI page loads chrome://theme/colors.css only when the
+   webuiRefresh2026 feature is on, and it is disabled by default. The
+   fallbacks are therefore not fallbacks here, they are the live palette.
+
+   Overriding this layer is also the forward-compatible choice. Every token
+   is consumed as var(--color-something, var(--cr-fallback-something)), so if
+   the pipeline is ever enabled the themed value simply wins instead.
+
+   html:not(#z) matches the selector colors.css itself writes under, so the
+   block keeps working either way. It also keeps stylelint's
+   no-duplicate-selectors quiet, since html is already used above. */
+
+html:not(#z) {
+  /* WebUI reaches past the token layer in a lot of places and names a Google
+     ramp entry outright, which is why selected tabs and nav items stayed blue
+     after the tokens below were already warm. Every one of those is defined
+     here as rgb(var(--google-X-rgb)), so redefining the numeric bases alone
+     recolours all of them and the derived names keep working untouched.
+
+     Only blue and grey move. Red, green and yellow stay put: they carry
+     meaning rather than branding, and an error that is not red is a bug. */
+  --google-blue-50-rgb: 253, 241, 233;
+  --google-blue-100-rgb: 252, 230, 215;
+  --google-blue-200-rgb: 248, 205, 178;
+  --google-blue-300-rgb: 255, 182, 142;
+  --google-blue-400-rgb: 238, 150, 102;
+  --google-blue-500-rgb: 210, 112, 63;
+  --google-blue-600-rgb: 190, 97, 52;
+  --google-blue-700-rgb: 168, 85, 43;
+  --google-blue-800-rgb: 140, 69, 34;
+  --google-blue-900-rgb: 112, 55, 26;
+
+  --google-grey-50-rgb: 250, 247, 245;
+  --google-grey-100-rgb: 245, 241, 238;
+  --google-grey-200-rgb: 236, 230, 226;
+  --google-grey-300-rgb: 222, 214, 208;
+  --google-grey-400-rgb: 194, 183, 175;
+  --google-grey-500-rgb: 158, 146, 138;
+  --google-grey-600-rgb: 131, 119, 112;
+  --google-grey-700-rgb: 97, 86, 80;
+  --google-grey-800-rgb: 61, 52, 47;
+  --google-grey-900-rgb: 32, 27, 24;
+  --google-grey-900-white-4-percent: #2a2421;
+
+  --cr-fallback-color-primary: rgb(168, 85, 43);
+  --cr-fallback-color-on-primary: rgb(255, 255, 255);
+  --cr-fallback-color-primary-container: rgb(255, 219, 199);
+  --cr-fallback-color-on-primary-container: rgb(58, 23, 4);
+  --cr-fallback-color-secondary-container: rgb(245, 224, 211);
+  --cr-fallback-color-on-secondary-container: rgb(46, 26, 13);
+  --cr-fallback-color-tonal-container: rgb(255, 219, 199);
+  --cr-fallback-color-on-tonal-container: rgb(58, 23, 4);
+  --cr-fallback-color-tonal-outline: rgb(224, 195, 176);
+
+  --cr-fallback-color-surface: rgb(253, 250, 248);
+  --cr-fallback-color-surface1: rgb(250, 245, 241);
+  --cr-fallback-color-surface2: rgb(247, 240, 235);
+  --cr-fallback-color-surface3: rgb(243, 234, 228);
+  --cr-fallback-color-surface4: rgb(242, 232, 225);
+  --cr-fallback-color-surface5: rgb(239, 228, 220);
+  --cr-fallback-color-on-surface-rgb: 32, 26, 23;
+  --cr-fallback-color-surface-variant: rgb(232, 222, 216);
+  --cr-fallback-color-on-surface-variant: rgb(84, 72, 66);
+  --cr-fallback-color-on-surface-subtle: rgb(107, 93, 85);
+
+  --cr-fallback-color-neutral-container: rgb(242, 238, 236);
+  --cr-fallback-color-neutral-outline: rgb(207, 196, 190);
+  --cr-fallback-color-outline: rgb(133, 116, 107);
+  --cr-fallback-color-divider: rgb(230, 220, 214);
+  --cr-fallback-color-base-container: rgb(244, 239, 236);
+
+  --cr-fallback-color-inverse-primary: rgb(255, 182, 142);
+  --cr-fallback-color-inverse-surface: rgb(54, 47, 44);
+  --cr-fallback-color-inverse-on-surface: rgb(248, 239, 233);
+
+  --cr-fallback-color-state-ripple-primary-rgb_: 210, 112, 63;
+
+  --cr-card-background-color: #fff;
+  --cr-menu-background-color: #fff;
+  --cr-menu-background-focus-color: rgb(239, 228, 220);
+  --cr-focused-item-color: rgb(243, 234, 228);
+  --cr-scrollable-border-color: rgb(230, 220, 214);
+  --cr-separator-color: rgba(32, 26, 23, .08);
+  --cr-iph-anchor-highlight-color: rgba(210, 112, 63, .12);
+
+  /* Chromium hardcodes these to a grey and a Google blue tint. Deriving them
+     instead keeps one decision in one place. */
+  --cr-title-text-color: var(--cr-primary-text-color);
+  --cr-form-field-label-color: var(--cr-secondary-text-color);
+
+  /* Density, tracking the 30px tab strip and 29px toolbar. */
+  --cr-toolbar-height: 44px;
+  --cr-section-min-height: 40px;
+  --cr-section-two-line-min-height: 56px;
+  --cr-section-padding: 16px;
+  --cr-section-vertical-padding: 10px;
+  --cr-section-vertical-margin: 12px;
+  --cr-section-indent-width: 32px;
+  --cr-button-height: 30px;
+  --cr-button-edge-spacing: 10px;
+  --cr-icon-size: 16px;
+  --cr-icon-ripple-size: 28px;
+  --cr-icon-ripple-padding: 6px;
+  --cr-icon-button-margin-start: 12px;
+  --cr-form-field-bottom-spacing: 12px;
+  --cr-card-border-radius: 6px;
+
+  /* Flat: no drop shadows anywhere. Menus and dialogs still have to detach
+     from what is behind them, so they get a hairline ring instead. */
+  --cr-elevation-1: none;
+  --cr-elevation-2: none;
+  --cr-elevation-3: none;
+  --cr-elevation-4: none;
+  --cr-elevation-5: none;
+  --cr-card-shadow: none;
+  --cr-menu-shadow: 0 0 0 1px var(--cr-separator-color);
+}
+
+@media (prefers-color-scheme: dark) {
+  html:not(#z) {
+    --cr-fallback-color-primary: rgb(255, 182, 142);
+    --cr-fallback-color-on-primary: rgb(83, 34, 0);
+    --cr-fallback-color-primary-container: rgb(118, 54, 15);
+    --cr-fallback-color-on-primary-container: rgb(255, 219, 199);
+    --cr-fallback-color-secondary-container: rgb(92, 67, 53);
+    --cr-fallback-color-on-secondary-container: rgb(245, 224, 211);
+    --cr-fallback-color-tonal-container: rgb(92, 67, 53);
+    --cr-fallback-color-on-tonal-container: rgb(245, 224, 211);
+    --cr-fallback-color-tonal-outline: rgb(138, 90, 58);
+
+    --cr-fallback-color-surface: rgb(28, 24, 21);
+    --cr-fallback-color-surface1: rgb(36, 31, 27);
+    --cr-fallback-color-surface2: rgb(42, 36, 32);
+    --cr-fallback-color-surface3: rgb(48, 41, 37);
+    --cr-fallback-color-surface4: rgb(51, 43, 39);
+    --cr-fallback-color-surface5: rgb(56, 48, 43);
+    --cr-fallback-color-on-surface-rgb: 236, 224, 217;
+    --cr-fallback-color-surface-variant: rgb(82, 69, 62);
+    --cr-fallback-color-on-surface-variant: rgb(208, 193, 184);
+    --cr-fallback-color-on-surface-subtle: rgb(189, 173, 164);
+
+    --cr-fallback-color-neutral-container: rgb(42, 36, 32);
+    --cr-fallback-color-neutral-outline: rgb(125, 111, 104);
+    --cr-fallback-color-outline: rgb(156, 138, 128);
+    --cr-fallback-color-divider: rgb(61, 52, 47);
+    --cr-fallback-color-base-container: rgb(36, 31, 27);
+
+    --cr-fallback-color-inverse-primary: rgb(168, 85, 43);
+    --cr-fallback-color-inverse-surface: rgb(236, 224, 217);
+    --cr-fallback-color-inverse-on-surface: rgb(28, 24, 21);
+
+    --cr-fallback-color-state-ripple-primary-rgb_: 255, 182, 142;
+
+    --cr-card-background-color: rgb(36, 31, 27);
+    --cr-menu-background-color: rgb(42, 36, 32);
+    --cr-menu-background-focus-color: rgb(56, 48, 43);
+    --cr-focused-item-color: rgb(48, 41, 37);
+    --cr-scrollable-border-color: rgb(61, 52, 47);
+    --cr-separator-color: rgba(236, 224, 217, .12);
+    --cr-iph-anchor-highlight-color: rgba(255, 182, 142, .14);
+  }
+}

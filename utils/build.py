@@ -78,6 +78,52 @@ def overlay_branding(src) -> int:
     return written
 
 
+STYLE_OVERLAYS = {
+    "cr_shared_vars.css": "ui/webui/resources/cr_elements/cr_shared_vars.css",
+}
+
+STYLE_BEGIN = "/* shiemi:begin */"
+STYLE_END = "/* shiemi:end */"
+
+
+def append_styles(src) -> int:
+    """Append our WebUI tokens to Chromium's, returning the number written.
+
+    Appended rather than patched or overwritten. These token files are long
+    and churn upstream, so a diff would conflict every rebase and a straight
+    copy would silently drop whatever upstream added. Appending only ever
+    reacts to the tail of the file, and cascade order does the rest: the
+    block lands last, so it wins ties.
+    """
+    styles = config.ROOT / "styles"
+    if not styles.is_dir():
+        return 0
+
+    written = 0
+    for name, relative in STYLE_OVERLAYS.items():
+        source = styles / name
+        dest = src.joinpath(*relative.split("/"))
+        if not source.is_file() or not dest.is_file():
+            continue
+
+        current = dest.read_text(encoding="utf-8")
+        start = current.find(STYLE_BEGIN)
+        if start != -1:
+            end = current.find(STYLE_END, start)
+            if end == -1:
+                raise SystemExit(f"unterminated shiemi block in {dest}")
+            current = current[:start] + current[end + len(STYLE_END):]
+
+        block = source.read_text(encoding="utf-8")
+        content = (f"{current.rstrip()}\n\n{STYLE_BEGIN}\n{block.rstrip()}\n"
+                   f"{STYLE_END}\n")
+        if content == dest.read_text(encoding="utf-8"):
+            continue
+        dest.write_text(content, encoding="utf-8", newline="\n")
+        written += 1
+    return written
+
+
 def install_defaults(out_dir) -> bool:
     """Put initial_preferences beside the binary, where first run reads it.
 
@@ -124,6 +170,10 @@ def main() -> int:
     written = overlay_branding(src)
     if written:
         print(f"branding {written} asset(s) copied into the tree")
+
+    styled = append_styles(src)
+    if styled:
+        print(f"styles   {styled} webui token file(s) extended")
 
     renamed = rebrand.apply(src)
     if renamed:
