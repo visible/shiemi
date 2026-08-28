@@ -83,7 +83,7 @@ def main() -> int:
             # PrintWindow asks the window to draw itself, which gets the
             # browser's own chrome but leaves composited page content blank.
             page.close()
-            match = window_shot.find_window(pid=proc.pid)
+            match = window_shot.best_window(pid=proc.pid)
             if not match:
                 raise SystemExit("no visible window for the browser")
             hwnd, title, rect = match

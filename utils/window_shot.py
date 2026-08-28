@@ -76,7 +76,8 @@ def owner_pid(hwnd) -> int:
     return pid.value
 
 
-def find_window(needle: str | None = None, pid: int | None = None):
+def find_window(needle: str | None = None, pid: int | None = None,
+                untitled: bool = False):
     needle = needle.lower() if needle else None
     matches = []
 
@@ -85,7 +86,9 @@ def find_window(needle: str | None = None, pid: int | None = None):
         if not user32.IsWindowVisible(hwnd):
             return True
         length = user32.GetWindowTextLengthW(hwnd)
-        if not length:
+        # Menus and other popups carry no title, so they are skipped unless
+        # asked for: without this a title match picks the browser window.
+        if not length and not untitled:
             return True
         buffer = ctypes.create_unicode_buffer(length + 1)
         user32.GetWindowTextW(hwnd, buffer, length + 1)
@@ -102,6 +105,12 @@ def find_window(needle: str | None = None, pid: int | None = None):
     # Largest first, so tooltips and off-screen helper windows lose.
     matches.sort(key=lambda m: (m[2].right - m[2].left) * (m[2].bottom - m[2].top),
                  reverse=True)
+    return matches
+
+
+def best_window(needle: str | None = None, pid: int | None = None,
+                untitled: bool = False):
+    matches = find_window(needle, pid, untitled)
     return matches[0] if matches else None
 
 
@@ -166,12 +175,26 @@ def main() -> int:
                         help="only match windows owned by this process")
     parser.add_argument("--crop-height", type=int,
                         help="keep only this many rows from the top")
+    parser.add_argument("--untitled", action="store_true",
+                        help="also match popups, which carry no title")
+    parser.add_argument("--pick", type=int, default=0,
+                        help="index into the matches, largest first")
+    parser.add_argument("--list", action="store_true",
+                        help="print the matches and stop")
     args = parser.parse_args()
 
     if not args.title and args.pid is None:
         raise SystemExit("pass --title, --pid or both")
 
-    match = find_window(args.title, args.pid)
+    matches = find_window(args.title, args.pid, args.untitled)
+    if args.list:
+        for i, (hwnd, title, rect) in enumerate(matches):
+            size = f"{rect.right - rect.left}x{rect.bottom - rect.top}"
+            print(f"{i}  {size:>12}  {title or '(untitled)'}")
+        return 0
+    if args.pick >= len(matches):
+        raise SystemExit(f"only {len(matches)} window(s) matched")
+    match = matches[args.pick]
     if not match:
         raise SystemExit("no visible window matched")
 
