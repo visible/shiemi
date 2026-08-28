@@ -88,6 +88,9 @@ def overlay_branding(src) -> int:
 
 STYLE_OVERLAYS = {
     "cr_shared_vars.css": "ui/webui/resources/cr_elements/cr_shared_vars.css",
+    "interstitial_core.css":
+        "components/security_interstitials/core/common/resources/"
+        "interstitial_core.css",
 }
 
 STYLE_BEGIN = "/* shiemi:begin */"

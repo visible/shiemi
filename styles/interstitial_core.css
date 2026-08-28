@@ -1,0 +1,52 @@
+/* Shiemi palette for the error pages and the security interstitials.
+
+   Appended to Chromium's own token file at build time rather than replacing it,
+   for the same reason as the WebUI tokens: upstream churns and only the block
+   below has to hold.
+
+   This file is loaded first by every interstitial and by the network error
+   page, and all of them draw from the variables it defines, so recolouring
+   them here reaches the lot. It is a separate pipeline from cr_shared_vars.css
+   - these pages are plain HTML with no cr-elements and no theme provider - so
+   the ramps are repeated here with the same values rather than shared.
+
+   body:not(#z) rather than body, because upstream's own dark-mode block sits
+   above this one and a plain body selector would lose the tie. The dark block
+   below therefore has to repeat every variable upstream's dark block sets,
+   since specificity outranks a media query. */
+
+body:not(#z) {
+  /* Only blue and grey move. Red stays: on these pages it is the difference
+     between a certificate warning and a broken link. */
+  --google-blue-50: rgb(253, 241, 233);
+  --google-blue-100: rgb(252, 230, 215);
+  --google-blue-300: rgb(255, 182, 142);
+  --google-blue-600: rgb(190, 97, 52);
+  --google-blue-700: rgb(168, 85, 43);
+
+  --google-gray-50: rgb(250, 247, 245);
+  --google-gray-100: rgb(245, 241, 238);
+  --google-gray-300: rgb(222, 214, 208);
+  --google-gray-500: rgb(158, 146, 138);
+  --google-gray-600: rgb(131, 119, 112);
+  --google-gray-700: rgb(97, 86, 80);
+  --google-gray-800: rgb(61, 52, 47);
+  --google-gray-900: rgb(32, 27, 24);
+
+  --background-color: rgb(253, 250, 248);
+  --quiet-background-color: rgb(250, 247, 245);
+  --link-color: rgb(107, 93, 85);
+}
+
+@media (prefers-color-scheme: dark) {
+  body:not(#z) {
+    --background-color: var(--google-gray-900);
+    --quiet-background-color: var(--background-color);
+    --link-color: var(--google-blue-300);
+
+    /* These two name a blue outright instead of taking one from the ramp, so
+       the ramp above does not reach them. */
+    --primary-button-fill-color-active: rgb(238, 150, 102);
+    --secondary-button-hover-fill-color: rgb(48, 41, 37);
+  }
+}
