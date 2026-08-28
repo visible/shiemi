@@ -1,0 +1,66 @@
+diff --git a/chrome/browser/ui/toolbar/app_menu_model.cc b/chrome/browser/ui/toolbar/app_menu_model.cc
+index fb1db8e036352..a8ce0d5af3388 100644
+--- a/chrome/browser/ui/toolbar/app_menu_model.cc
++++ b/chrome/browser/ui/toolbar/app_menu_model.cc
+@@ -2023,6 +2023,49 @@ bool AppMenuModel::IsCommandIdEnabled(int command_id) const {
+   }
+ }
+ 
++bool AppMenuModel::IsCommandIdVisible(int command_id) const {
++  // Trimmed here rather than by deleting the AddItem calls in Build(). Build()
++  // is long and churns upstream, so a list of ids costs a fraction of the
++  // rebase. AddSeparator already consults this when deciding whether to add a
++  // separator at all, so the dividers collapse on their own.
++  switch (command_id) {
++    // Signed-out browser: these lead to an account or to another device.
++    case IDC_PROFILE_MENU_IN_APP_MENU:
++    case IDC_MANAGE_GOOGLE_ACCOUNT:
++    case IDC_SEND_TAB_TO_SELF:
++    case IDC_RECENT_TABS_LOGIN_FOR_DEVICE_TABS:
++    case IDC_RECENT_TABS_SEE_DEVICE_TABS:
++
++    // Each of these sends the page, or a query about it, to a Google service.
++    case IDC_SHOW_TRANSLATE:
++    case IDC_CONTENT_CONTEXT_LENS_OVERLAY:
++    case IDC_OPEN_GLIC:
++    case IDC_ROUTE_MEDIA:
++
++    // Store promotion.
++    case IDC_FIND_EXTENSIONS:
++    case IDC_EXTENSIONS_SUBMENU_VISIT_CHROME_WEB_STORE:
++
++    // Safety Hub's checks run against Google endpoints.
++    case IDC_OPEN_SAFETY_HUB:
++    case IDC_SAFETY_HUB_MANAGE_EXTENSIONS:
++    case IDC_SAFETY_HUB_SHOW_PASSWORD_CHECKUP:
++
++    // All of these open a google.com page.
++    case IDC_FEEDBACK:
++    case IDC_CHROME_TIPS:
++    case IDC_CHROME_WHATS_NEW:
++    case IDC_SHOW_BETA_FORUM:
++    case IDC_HELP_PAGE_VIA_MENU:
++
++    // Customises a new tab page this build does not ship.
++    case IDC_SHOW_CUSTOMIZE_CHROME_SIDE_PANEL:
++      return false;
++    default:
++      return true;
++  }
++}
++
+ bool AppMenuModel::IsCommandIdAlerted(int command_id) const {
+   if (command_id == IDC_VIEW_PASSWORDS ||
+       command_id == IDC_SHOW_PASSWORD_MANAGER) {
+diff --git a/chrome/browser/ui/toolbar/app_menu_model.h b/chrome/browser/ui/toolbar/app_menu_model.h
+index 04cf48490e909..e29fdd48842a4 100644
+--- a/chrome/browser/ui/toolbar/app_menu_model.h
++++ b/chrome/browser/ui/toolbar/app_menu_model.h
+@@ -264,6 +264,7 @@ class AppMenuModel : public ui::SimpleMenuModel,
+   void ExecuteCommand(int command_id, int event_flags) override;
+   bool IsCommandIdChecked(int command_id) const override;
+   bool IsCommandIdEnabled(int command_id) const override;
++  bool IsCommandIdVisible(int command_id) const override;
+   bool IsCommandIdAlerted(int command_id) const override;
+   bool GetAcceleratorForCommandId(int command_id,
+                                   ui::Accelerator* accelerator) const override;
