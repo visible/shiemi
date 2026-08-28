@@ -1,0 +1,57 @@
+diff --git a/chrome/browser/resources/settings/page_visibility.ts b/chrome/browser/resources/settings/page_visibility.ts
+index feff9bdf64552..d0baac4e3040e 100644
+--- a/chrome/browser/resources/settings/page_visibility.ts
++++ b/chrome/browser/resources/settings/page_visibility.ts
+@@ -44,7 +44,51 @@ export interface PrivacyPageVisibility {
+ 
+ function createPageVisibility(): PageVisibility|undefined {
+   if (!loadTimeData.getBoolean('isGuest')) {
+-    return undefined;
++    // "You and Google" is sign-in, sync and Google services; "AI innovations"
++    // is Gemini and friends; Safety Hub runs its checks against Google
++    // endpoints. None of them do anything in a browser that never signs in,
++    // and leaving them in advertises services this build does not use.
++    //
++    // Hiding drops the routes with the sections, so the components behind
++    // them are never instantiated. Guest mode already ships with these three
++    // switched off, so the resulting configuration is one upstream tests.
++    //
++    // Importing bookmarks lives under "You and Google" but is also in the app
++    // menu, under Bookmarks and lists, so it survives.
++    //
++    // Every key has to be listed. The menu binds hidden="[[!visibility.x]]",
++    // so once this returns an object at all, anything left out reads as
++    // undefined and the section disappears. appearance and privacy take their
++    // nested form rather than true for the same reason: their pages read the
++    // sub-keys off whatever is here.
++    return {
++      a11y: true,
++      ai: false,
++      appearance: {
++        bookmarksBar: true,
++        homeButton: true,
++        hoverCard: true,
++        pageZoom: true,
++        setTheme: true,
++        sidePanel: true,
++      },
++      autofill: true,
++      defaultBrowser: true,
++      downloads: true,
++      extensions: true,
++      languages: true,
++      onStartup: true,
++      people: false,
++      performance: true,
++      privacy: {
++        networkPrediction: true,
++        searchPrediction: true,
++      },
++      reset: true,
++      safetyHub: false,
++      system: true,
++      yourSavedInfo: true,
++    };
+   }
+ 
+   // <if expr="not is_chromeos">
