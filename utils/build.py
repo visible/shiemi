@@ -60,12 +60,20 @@ def overlay_branding(src) -> int:
     pairs += [(p, theme / "win" / p.name)
               for p in sorted((icons / "win").glob("*.ico"))]
 
+    # The logo WebUI draws is a chrome_scaled_image, which resolves under the
+    # density directories rather than the flat theme one, so it needs its own
+    # copy or chrome://theme/current-channel-logo keeps serving Chromium's.
+    for density in ("default_100_percent", "default_200_percent"):
+        pairs += [(p, src / "chrome" / "app" / "theme" / density / "chromium" / p.name)
+                  for p in sorted((icons / density).glob("*.png"))]
+
     # branding/vector mirrors the Chromium tree, so the relative path is the
     # destination. These are the product logo drawn in infobars and dialogs,
     # which comes from .icon sources rather than the theme PNGs.
     vector = config.ROOT / "branding" / "vector"
     pairs += [(p, src / p.relative_to(vector))
-              for p in sorted(vector.rglob("*.icon"))]
+              for p in sorted(vector.rglob("*"))
+              if p.is_file()]
 
     written = 0
     for source, dest in pairs:

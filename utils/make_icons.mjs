@@ -34,6 +34,14 @@ const ICO_PNG = [128, 256]
 // no .grd reference is left dangling.
 const LOGOS = [16, 24, 48, 64, 128, 256]
 
+// theme_resources.grd declares the logo as a chrome_scaled_image, so it is
+// loaded from the per-density directories rather than the flat one above. This
+// is the logo WebUI draws in its toolbar, via chrome://theme/current-channel-logo.
+const SCALED = {
+  default_100_percent: { 16: 16, 32: 32 },
+  default_200_percent: { 16: 32, 32: 64 },
+}
+
 // Chromium draws the product logo from .icon files in four separate targets,
 // each declaring its own canvas. Keys mirror the Chromium tree so the overlay in
 // utils/build.py can copy by relative path with no lookup table of its own.
@@ -138,6 +146,15 @@ for (const size of LOGOS) {
   report(`product_logo_${size}.png`, data.length)
 }
 
+for (const [density, logos] of Object.entries(SCALED)) {
+  await mkdir(path.join(OUT, density), { recursive: true })
+  for (const [name, size] of Object.entries(logos)) {
+    const data = await draw(size).png({ compressionLevel: 9 }).toBuffer()
+    await writeFile(path.join(OUT, density, `product_logo_${name}.png`), data)
+    report(`${density}/product_logo_${name}.png`, data.length)
+  }
+}
+
 // Tray and status surfaces composite a single-colour mark themselves, so the
 // plate drops out and the petals carry the shape alone.
 const mono = await draw(22, { colour: MARK, plate: null })
@@ -152,6 +169,14 @@ report('product_logo_22_mono.png', mono.length)
 const favicon = svg({ size: 32 })
 await writeFile(path.join(WEB, 'icon.svg'), `${favicon}\n`)
 report('app/icon.svg', favicon.length + 1)
+
+// In dark mode the WebUI toolbar and drawer take a <picture> source ahead of
+// the themed PNG, so this is the logo those pages actually draw.
+const darkLogo = path.join(VECTOR, 'ui/webui/resources/images/chrome_logo_dark.svg')
+await mkdir(path.dirname(darkLogo), { recursive: true })
+const toolbarMark = svg({ size: 24 })
+await writeFile(darkLogo, `${toolbarMark}\n`)
+report('chrome_logo_dark.svg', toolbarMark.length + 1)
 
 const apple = await draw(180).png({ compressionLevel: 9 }).toBuffer()
 await writeFile(path.join(WEB, 'apple-icon.png'), apple)
