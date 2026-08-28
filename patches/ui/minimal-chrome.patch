@@ -1,5 +1,5 @@
 diff --git a/chrome/browser/ui/layout_constants.cc b/chrome/browser/ui/layout_constants.cc
-index d89ceaf9e4b0c..b1c8c01ff562f 100644
+index d89ceaf9e4b0c..8dd697ecad05a 100644
 --- a/chrome/browser/ui/layout_constants.cc
 +++ b/chrome/browser/ui/layout_constants.cc
 @@ -17,6 +17,11 @@
@@ -58,16 +58,23 @@ index d89ceaf9e4b0c..b1c8c01ff562f 100644
      // LINT.IfChange(LocationBarIconSize)
      case LayoutConstant::kLocationBarIconSize:
        return touch_ui ? 20 : 16;
-@@ -86,7 +91,7 @@ int GetLayoutConstant(LayoutConstant constant) {
+@@ -86,9 +91,13 @@ int GetLayoutConstant(LayoutConstant constant) {
      case LayoutConstant::kLocationBarLeadingIconSize:
        return GetLayoutConstant(LayoutConstant::kLocationBarIconSize);
      case LayoutConstant::kLocationBarTrailingIconSize:
 -      return 20;
 +      return 16;
      case LayoutConstant::kNewTabButtonLeadingMargin:
-       return 0;
+-      return 0;
++      // Cancels the tuck the caller applies, so the button lands at the strip's
++      // edge rather than inside the last tab. Upstream can tuck because its
++      // 12dip trailing flare is concave enough to nest a round button in; the
++      // flatter flare here leaves nothing to nest into.
++      return kBasePadding * 3;
      case LayoutConstant::kStarRatingIconSize:
-@@ -100,39 +105,40 @@ int GetLayoutConstant(LayoutConstant constant) {
+       return 14;
+     case LayoutConstant::kTabAfterTitlePadding:
+@@ -100,39 +109,40 @@ int GetLayoutConstant(LayoutConstant constant) {
      case LayoutConstant::kTabCloseButtonSize:
        return touch_ui ? 24 : (features::IsRoundedIconsEnabled() ? 14 : 16);
      case LayoutConstant::kTabHeight:
@@ -120,7 +127,7 @@ index d89ceaf9e4b0c..b1c8c01ff562f 100644
      case LayoutConstant::kSidePanelInset:
        return 8;
      case LayoutConstant::kPageInfoIconSize:
-@@ -189,13 +195,14 @@ gfx::Insets GetLayoutInsets(LayoutInset inset) {
+@@ -189,13 +199,14 @@ gfx::Insets GetLayoutInsets(LayoutInset inset) {
        return gfx::Insets::VH(8, 20);
  
      case LOCATION_BAR_ICON_INTERIOR_PADDING:
@@ -137,7 +144,7 @@ index d89ceaf9e4b0c..b1c8c01ff562f 100644
  
      case TOOLBAR_ACTION_VIEW: {
        // TODO(afakhry): Unify all toolbar button sizes on all platforms.
-@@ -204,7 +211,7 @@ gfx::Insets GetLayoutInsets(LayoutInset inset) {
+@@ -204,7 +215,7 @@ gfx::Insets GetLayoutInsets(LayoutInset inset) {
      }
  
      case TOOLBAR_BUTTON:
@@ -146,7 +153,7 @@ index d89ceaf9e4b0c..b1c8c01ff562f 100644
  
      case BROWSER_APP_MENU_CHIP_PADDING:
        if (touch_ui) {
-@@ -223,11 +230,12 @@ gfx::Insets GetLayoutInsets(LayoutInset inset) {
+@@ -223,11 +234,12 @@ gfx::Insets GetLayoutInsets(LayoutInset inset) {
        if (touch_ui) {
          return GetLayoutInsets(TOOLBAR_BUTTON);
        } else {
