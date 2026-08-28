@@ -78,6 +78,22 @@ def overlay_branding(src) -> int:
     return written
 
 
+def install_defaults(out_dir) -> bool:
+    """Put initial_preferences beside the binary, where first run reads it.
+
+    Chromium looks for it in the executable's own directory, so a dev build
+    only picks up the shipped defaults if it is copied out here too.
+    """
+    source = config.ROOT / "defaults" / "initial_preferences"
+    if not source.is_file() or not out_dir.is_dir():
+        return False
+    dest = out_dir / "initial_preferences"
+    if dest.exists() and dest.read_bytes() == source.read_bytes():
+        return False
+    shutil.copyfile(source, dest)
+    return True
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -126,11 +142,15 @@ def main() -> int:
     cores = os.cpu_count() or 0
     if args.no_yield:
         print(f"jobs     all {cores} core(s), normal priority")
-        return run(f"autoninja -C {out_dir} {args.target}", src)
+        rc = run(f"autoninja -C {out_dir} {args.target}", src)
+    else:
+        print(f"jobs     {args.jobs} of {cores} core(s), below normal priority")
+        rc = run(f"autoninja -C {out_dir} -j {args.jobs} {args.target}", src,
+                 yield_cpu=True)
 
-    print(f"jobs     {args.jobs} of {cores} core(s), below normal priority")
-    return run(f"autoninja -C {out_dir} -j {args.jobs} {args.target}", src,
-               yield_cpu=True)
+    if rc == 0 and install_defaults(out_path):
+        print("defaults initial_preferences copied beside the binary")
+    return rc
 
 
 if __name__ == "__main__":

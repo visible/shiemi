@@ -1,0 +1,10 @@
+{
+  "safebrowsing": {
+    "enabled": false,
+    "enhanced": false
+  },
+  "profile": {
+    "cookie_controls_mode": 1
+  },
+  "https_first_balanced_mode_enabled": true
+}
