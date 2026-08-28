@@ -44,7 +44,12 @@ def main() -> int:
                         help="leave the browser running")
     parser.add_argument("--window", action="store_true",
                         help="capture the whole window instead of the page")
+    parser.add_argument("--headless", action="store_true",
+                        help="draw offscreen, so nothing steals focus")
     args = parser.parse_args()
+
+    if args.headless and args.window:
+        raise SystemExit("--window needs a real window, so not with --headless")
 
     binary = config.require_src() / "out" / args.out_dir / "chrome.exe"
     if not binary.is_file():
@@ -52,14 +57,20 @@ def main() -> int:
 
     port = free_port()
     profile = Path(tempfile.mkdtemp(prefix="shiemi-shot-"))
-    proc = subprocess.Popen([
+    command = [
         str(binary),
         f"--user-data-dir={profile}",
         f"--remote-debugging-port={port}",
         f"--window-size={args.size.replace('x', ',')}",
         "--disable-field-trial-config",
         "--no-default-browser-check",
-    ])
+    ]
+    if args.headless:
+        # The dark palette is picked from the browser theme, which headless
+        # does not build, so ask for it directly or every shot comes back light.
+        command += ["--headless=new", "--force-dark-mode",
+                    "--enable-features=WebContentsForceDark"]
+    proc = subprocess.Popen(command)
 
     try:
         target = cdp.wait_for_page(port, time.monotonic() + 40)
