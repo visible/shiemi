@@ -14,6 +14,7 @@ sees, shipped defaults included.
 
 import argparse
 import base64
+import json
 import shutil
 import socket
 import subprocess
@@ -32,6 +33,30 @@ def free_port() -> int:
         return s.getsockname()[1]
 
 
+def seed_local_state(profile: Path, assignments: list[str]) -> None:
+    """Write browser-wide prefs, which live outside the profile directory.
+
+    Some pages are gated on local state rather than a profile pref, and a fresh
+    profile has it switched off by definition. chrome://interstitials is one:
+    internal_only_uis_enabled has to be true before it renders anything.
+    """
+    state = {}
+    for assignment in assignments:
+        key, _, raw = assignment.partition("=")
+        try:
+            value = json.loads(raw)
+        except json.JSONDecodeError:
+            value = raw
+        target = state
+        *parents, leaf = key.split(".")
+        for parent in parents:
+            target = target.setdefault(parent, {})
+        target[leaf] = value
+
+    profile.mkdir(parents=True, exist_ok=True)
+    (profile / "Local State").write_text(json.dumps(state), encoding="utf-8")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("url")
@@ -46,6 +71,9 @@ def main() -> int:
                         help="capture the whole window instead of the page")
     parser.add_argument("--headless", action="store_true",
                         help="draw offscreen, so nothing steals focus")
+    parser.add_argument("--local-state", action="append", default=[],
+                        metavar="KEY=JSON",
+                        help="seed a browser-wide pref before launch")
     args = parser.parse_args()
 
     if args.headless and args.window:
@@ -57,6 +85,9 @@ def main() -> int:
 
     port = free_port()
     profile = Path(tempfile.mkdtemp(prefix="shiemi-shot-"))
+    if args.local_state:
+        seed_local_state(profile, args.local_state)
+
     command = [
         str(binary),
         f"--user-data-dir={profile}",
@@ -65,6 +96,10 @@ def main() -> int:
         "--disable-field-trial-config",
         "--no-default-browser-check",
     ]
+    if args.window:
+        # A window launched behind another one comes back as a blank rectangle,
+        # because Chromium stops painting what it believes is occluded.
+        command.append("--disable-features=CalculateNativeWinOcclusion")
     if args.headless:
         # The dark palette is picked from the browser theme, which headless
         # does not build, so ask for it directly or every shot comes back light.
