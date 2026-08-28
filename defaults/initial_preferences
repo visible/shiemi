@@ -7,5 +7,16 @@
     "cookie_controls_mode": 1
   },
   "https_first_balanced_mode_enabled": true,
-  "hide_web_store_icon": true
+  "hide_web_store_icon": true,
+  "media_router": {
+    "enable_media_router": false
+  },
+  "browser": {
+    "gemini_settings": 1
+  },
+  "lens": {
+    "policy": {
+      "lens_overlay_settings": 1
+    }
+  }
 }
