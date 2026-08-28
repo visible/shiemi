@@ -23,10 +23,16 @@ KEEP = re.compile(r"Chromium Authors|chromium\.org|Chromium OS|ChromiumOS")
 
 MESSAGE = re.compile(r"(<message\b[^>]*>)(.*?)(</message>)", re.DOTALL)
 
-# Only the Chromium-branded table. google_chrome_strings.grd is never compiled
-# in an unbranded build, and components_strings.grd refers to the product
-# through a placeholder that resolves to IDS_PRODUCT_NAME.
-TARGETS = ["chrome/app/chromium_strings.grd"]
+# The Chromium-branded tables. google_chrome_strings.grd is never compiled in
+# an unbranded build, and components_strings.grd refers to the product through
+# a placeholder that resolves to IDS_PRODUCT_NAME.
+#
+# The settings part file is separate from the main table and easy to miss: it
+# is what names the About page in the settings menu.
+TARGETS = [
+    "chrome/app/chromium_strings.grd",
+    "chrome/app/settings_chromium_strings.grdp",
+]
 
 
 def rewrite(path: Path, product: str = PRODUCT) -> int:
