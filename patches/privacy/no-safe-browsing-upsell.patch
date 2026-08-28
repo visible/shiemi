@@ -1,0 +1,17 @@
+diff --git a/components/security_interstitials/content/ssl_blocking_page_base.cc b/components/security_interstitials/content/ssl_blocking_page_base.cc
+index 917f8c6a85efc..0a544be5d1cac 100644
+--- a/components/security_interstitials/content/ssl_blocking_page_base.cc
++++ b/components/security_interstitials/content/ssl_blocking_page_base.cc
+@@ -73,7 +73,11 @@ bool SSLBlockingPageBase::ShouldShowEnhancedProtectionMessage() {
+ 
+ void SSLBlockingPageBase::PopulateEnhancedProtectionMessage(
+     base::DictValue& load_time_data) {
+-  const bool show = ShouldShowEnhancedProtectionMessage();
++  // Never shown. The box offers Google's enhanced Safe Browsing, which sends
++  // page content off the device, and it offers it on the one page where the
++  // user is already alarmed. Gated here rather than in the check above so the
++  // upstream conditions stay intact for the next rebase.
++  const bool show = false;
+ 
+   load_time_data.Set(security_interstitials::kDisplayEnhancedProtectionMessage,
+                      show);
