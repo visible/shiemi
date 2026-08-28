@@ -14,6 +14,14 @@
   "browser": {
     "gemini_settings": 1
   },
+  "toolbar": {
+    "pinned_actions": [],
+    "pinned_chrome_labs_migration_complete": true
+  },
+  "omnibox": {
+    "show_ai_mode_omnibox_button": false,
+    "show_google_lens_shortcut": false
+  },
   "lens": {
     "policy": {
       "lens_overlay_settings": 1

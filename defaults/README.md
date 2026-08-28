@@ -20,7 +20,12 @@ change.
 | `browser.gemini_settings` | `1` is `SettingsPolicyState::kDisabled`. `kGlic` is `FEATURE_ENABLED_BY_DEFAULT` on Windows, so Gemini ships enabled and only stays dark because `IsEnabled()` needs a capable primary account. Setting this stops one sign-in from surfacing it. |
 | `lens.policy.lens_overlay_settings` | `1` is `LensOverlaySettingsPolicyValue::kDisabled`. `kLensOverlay` is enabled by default on desktop; it stays dark only because its `google-dse-required` param is true and the default engine is DuckDuckGo. Setting this decouples it from the search choice. |
 
-Two of these guard against a change rather than a present leak. Gemini and Lens
+| `toolbar.pinned_actions` | `toolbar_pref_names.cc` pins Chrome Labs by default, and the guard that suppresses it — an early return on the stable channel — never fires here, because `GetChromeChannel()` only reads a channel under `GOOGLE_CHROME_BRANDING` and otherwise returns `UNKNOWN`. The flask stays absent today only because 151's lab list is an empty vector; the next release that adds a lab would surface it. An empty list also opts out of anything upstream decides to pin by default later. |
+| `toolbar.pinned_chrome_labs_migration_complete` | Required, or the above does nothing. `MaybeMigrateExistingPinnedStates` re-pins Chrome Labs on first run unless this flag is already set, which silently undid the empty list until it was set too. |
+| `omnibox.show_ai_mode_omnibox_button` | Defaults to true. The chip needs `omnibox::kAimEnabled` and a Google default engine as well, so it is off three times over, but this is the only one of the three we control. |
+| `omnibox.show_google_lens_shortcut` | Same reasoning as above, for the Lens entry in the omnibox. |
+
+Several of these guard against a change rather than a present leak. Gemini and Lens
 are both already inert, for unrelated reasons — no account, and a non-Google
 default engine. Neither reason is a setting we control once the browser is in
 someone's hands, so both are pinned off explicitly.
