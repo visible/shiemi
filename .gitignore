@@ -1,5 +1,11 @@
 __pycache__/
 *.pyc
+
+# Screenshots from the capture tools. Kept out of the tree because they are
+# large, they are regenerated on every UI change, and a stale one is worse
+# than none.
+review-*.png
+shot-*.png
 .env*
 node_modules/
 .next/
