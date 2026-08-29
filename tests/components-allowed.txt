@@ -1,0 +1,23 @@
+# Components allowed to download onto a cold profile, with no user action.
+#
+#   python3 utils/audit_components.py --baseline
+#
+# Anything that installs but is not listed here fails the audit. Format is
+#
+#   DirectoryName | why it cannot be removed
+#
+# Every entry is a concession. The test is not "is this useful" but "does the
+# user get something they would miss on a profile they have not touched yet".
+# A model, a voice pack or a heuristics bundle fails that test even when the
+# feature it serves is a good one, because it can be fetched when the feature
+# is first used instead.
+
+CertificateRevocation | CRLSet: revoked certificates, the only revocation check that works offline
+PKIMetadata | Certificate Transparency log list, needed to validate SCTs
+PKIMetadataFastpush | same list on the faster channel
+SSLErrorAssistant | tells a captive portal apart from a real certificate attack
+SafetyTips | lookalike domain warnings, and it is 182 KB
+FileTypePolicies | which downloads are dangerous, used with Safe Browsing off
+ZxcvbnData | password strength estimation, entirely local once fetched
+hyphen-data | hyphenation dictionaries, no network use after install
+OriginTrials | public keys for origin trials, or trial-gated sites break
