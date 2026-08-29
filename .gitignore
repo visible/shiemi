@@ -6,6 +6,9 @@ __pycache__/
 # than none.
 review-*.png
 shot-*.png
+
+# Profile that launch.py builds for hand testing.
+.profile/
 .env*
 node_modules/
 .next/
