@@ -9,3 +9,18 @@
 # argument.
 #
 # One host per line. A bare domain also covers its subdomains.
+
+# The component update check, from components/update_client. This is the one
+# concession, and it is a real trade: the components left registered are
+# revoked-certificate lists, the Certificate Transparency log list, the
+# dangerous-download classifier and the captive-portal detector, and a stale
+# copy of any of them is a security hole rather than a stale feature. Refusing
+# the check means shipping revocation data that never updates.
+#
+# What it costs is an IP address and the installed component versions, on the
+# five-hourly check timer, to a Google host. Self-hosting an update endpoint
+# would remove that and is the way to delete this line; until then it stays.
+#
+# Verified with utils/audit_components.py that nothing else is registered, so
+# this check speaks for security components only.
+update.googleapis.com
