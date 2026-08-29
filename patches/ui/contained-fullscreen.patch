@@ -41,8 +41,62 @@ index aa327f72a8864..9ccbdfd87cdb4 100644
  #if BUILDFLAG(IS_CHROMEOS)
    registry->RegisterBooleanPref(prefs::kForceMaximizeOnFirstRun, false);
  #endif
+diff --git a/chrome/browser/ui/exclusive_access/exclusive_access_manager.cc b/chrome/browser/ui/exclusive_access/exclusive_access_manager.cc
+index 0404243c845d5..073e3778ef5d2 100644
+--- a/chrome/browser/ui/exclusive_access/exclusive_access_manager.cc
++++ b/chrome/browser/ui/exclusive_access/exclusive_access_manager.cc
+@@ -188,6 +188,21 @@ void ExclusiveAccessManager::OnTabClosing(WebContents* web_contents) {
+ 
+ bool ExclusiveAccessManager::HandleUserKeyEvent(
+     const input::NativeWebKeyboardEvent& event) {
++  // Ctrl's own key-up does not reliably clear the modifier bit across
++  // platforms, so the key code decides for Ctrl itself and the bitmask decides
++  // for every other key, which also recovers the state after a lost key-up.
++  const bool is_key_down =
++      event.GetType() == input::NativeWebKeyboardEvent::Type::kRawKeyDown ||
++      event.GetType() == input::NativeWebKeyboardEvent::Type::kKeyDown;
++  if (event.windows_key_code == ui::VKEY_CONTROL ||
++      event.windows_key_code == ui::VKEY_LCONTROL ||
++      event.windows_key_code == ui::VKEY_RCONTROL) {
++    control_down_ = is_key_down;
++  } else {
++    control_down_ = (event.GetModifiers() &
++                     blink::WebInputEvent::Modifiers::kControlKey) != 0;
++  }
++
+   if (event.windows_key_code != ui::VKEY_ESCAPE) {
+     OnUserInput();
+     return false;
+diff --git a/chrome/browser/ui/exclusive_access/exclusive_access_manager.h b/chrome/browser/ui/exclusive_access/exclusive_access_manager.h
+index 4a726e3df5352..3b02816d0035f 100644
+--- a/chrome/browser/ui/exclusive_access/exclusive_access_manager.h
++++ b/chrome/browser/ui/exclusive_access/exclusive_access_manager.h
+@@ -87,6 +87,14 @@ class ExclusiveAccessManager {
+   // Called by Browser::ContentsMouseEvent.
+   void OnUserInput();
+ 
++  // Whether Ctrl is held right now, as last seen by HandleUserKeyEvent.
++  //
++  // A page's fullscreen request carries no modifiers, and there is no
++  // browser-side hook for mouse events, so a Ctrl-click on a player's
++  // fullscreen button can only be recognised by remembering that Ctrl went
++  // down. Ctrl-clicking means Ctrl is still held when the request arrives.
++  bool IsControlDown() const { return control_down_; }
++
+   // Called by platform ExclusiveAccessExitBubble.
+   void ExitExclusiveAccess();
+ 
+@@ -122,6 +130,8 @@ class ExclusiveAccessManager {
+       exclusive_access_controllers_;
+   ExclusiveAccessPermissionManager permission_manager_;
+ 
++  bool control_down_ = false;
++
+   std::optional<ui::ScopedUnownedUserData<ExclusiveAccessManager>>
+       scoped_unowned_user_data_;
+ 
 diff --git a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
-index f597f2282a9e9..e12a2b3ac814c 100644
+index f597f2282a9e9..bdb92b817beae 100644
 --- a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 +++ b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 @@ -22,8 +22,10 @@
@@ -68,7 +122,7 @@ index f597f2282a9e9..e12a2b3ac814c 100644
  #if !BUILDFLAG(IS_ANDROID)
  #include "chrome/browser/ui/blocked_content/popunder_preventer.h"
  #endif  // !BUILDFLAG(IS_ANDROID)
-@@ -654,15 +651,27 @@ bool FullscreenController::MaybeToggleFullscreenWithinTab(
+@@ -654,15 +651,33 @@ bool FullscreenController::MaybeToggleFullscreenWithinTab(
    }
  
    if (enter_fullscreen) {
@@ -77,9 +131,15 @@ index f597f2282a9e9..e12a2b3ac814c 100644
 +    // goes fullscreen into the tab's content area and the window is left
 +    // alone. Excluded once the tab holds real fullscreen, so a nested request
 +    // stays on the path it started on.
++    //
++    // The preference names the default and Ctrl asks for the other one, so a
++    // player's own fullscreen button reaches both modes and neither is buried
++    // in settings.
 +    Profile* const profile = exclusive_access_manager()->context()->GetProfile();
 +    const bool contained =
-+        profile && profile->GetPrefs()->GetBoolean(prefs::kContainedFullscreen) &&
++        profile &&
++        (profile->GetPrefs()->GetBoolean(prefs::kContainedFullscreen) !=
++         exclusive_access_manager()->IsControlDown()) &&
 +        exclusive_access_tab() != web_contents;
 +    if (web_contents->IsBeingVisiblyCaptured() || contained) {
        FullscreenWithinTabHelper::CreateForWebContents(web_contents);
@@ -98,14 +158,11 @@ index f597f2282a9e9..e12a2b3ac814c 100644
      }
    }
 diff --git a/chrome/browser/ui/fullscreen/browser_window_fullscreen_controller.cc b/chrome/browser/ui/fullscreen/browser_window_fullscreen_controller.cc
-index 41647c4d74f03..d3db9f929c39a 100644
+index 41647c4d74f03..b395cc92542a3 100644
 --- a/chrome/browser/ui/fullscreen/browser_window_fullscreen_controller.cc
 +++ b/chrome/browser/ui/fullscreen/browser_window_fullscreen_controller.cc
-@@ -5,11 +5,17 @@
- #include "chrome/browser/ui/fullscreen/browser_window_fullscreen_controller.h"
- 
+@@ -7,9 +7,12 @@
  #include "base/types/to_address.h"
-+#include "chrome/browser/profiles/profile.h"
  #include "chrome/browser/ui/browser_element_identifiers.h"
  #include "chrome/browser/ui/browser_window/public/browser_window_interface.h"
 +#include "chrome/browser/ui/exclusive_access/fullscreen_within_tab_helper.h"
@@ -113,30 +170,37 @@ index 41647c4d74f03..d3db9f929c39a 100644
  #include "chrome/browser/ui/interaction/browser_elements.h"
 +#include "chrome/browser/ui/tabs/tab_strip_model.h"
  #include "chrome/browser/ui/views/frame/browser_frame_view.h"
-+#include "chrome/common/pref_names.h"
-+#include "components/prefs/pref_service.h"
 +#include "content/public/browser/web_contents.h"
  #include "ui/views/interaction/element_tracker_views.h"
  #include "ui/views/view_utils.h"
  #include "ui/views/widget/widget.h"
-@@ -18,6 +24,31 @@ DEFINE_USER_DATA(BrowserWindowFullscreenController);
+@@ -78,6 +81,13 @@ bool BrowserWindowFullscreenController::ShouldHideUIForFullscreen() const {
+     return false;
+   }
  
- namespace {
- 
-+// True while the active tab holds a contained fullscreen, where the page fills
-+// the window but the window stays a window.
-+//
-+// The same within-tab mechanism also backs tab capture, which deliberately
-+// leaves the window untouched, so a captured tab is excluded: collapsing the
-+// toolbar under a recording would be a surprise rather than a feature.
-+bool IsActiveTabContainedFullscreen(BrowserWindowInterface* browser) {
-+  Profile* const profile = browser->GetProfile();
-+  if (!profile ||
-+      !profile->GetPrefs()->GetBoolean(prefs::kContainedFullscreen)) {
-+    return false;
++  // Checked after immersive mode so that it keeps its slide-down panel, and
++  // before the widget test below because this is the case where the page is
++  // fullscreen and the window deliberately is not.
++  if (IsContainedFullscreen()) {
++    return true;
 +  }
 +
-+  const TabStripModel* const tabs = browser->GetTabStripModel();
+   const BrowserFrameView* browser_frame_view = GetBrowserFrameView(browser);
+   if (!browser_frame_view) {
+     // Do not hide UI by default.
+@@ -89,6 +99,26 @@ bool BrowserWindowFullscreenController::ShouldHideUIForFullscreen() const {
+          browser_frame_view->ShouldHideTopUIInFullscreen();
+ }
+ 
++bool BrowserWindowFullscreenController::IsContainedFullscreen() const {
++  // Deliberately not gated on the preference. The preference only picks which
++  // mode a request enters, and Ctrl inverts it, so once a tab is in contained
++  // fullscreen the helper is the only thing that knows.
++  //
++  // The same within-tab mechanism also backs tab capture, which purposely
++  // leaves the window untouched, so a captured tab is excluded: collapsing the
++  // toolbar under a recording would be a surprise rather than a feature.
++  const TabStripModel* const tabs = browser_->GetTabStripModel();
 +  content::WebContents* const contents =
 +      tabs ? tabs->GetActiveWebContents() : nullptr;
 +  if (!contents || contents->IsBeingVisiblyCaptured()) {
@@ -148,28 +212,30 @@ index 41647c4d74f03..d3db9f929c39a 100644
 +  return helper && helper->is_fullscreen_within_tab();
 +}
 +
- const BrowserFrameView* GetBrowserFrameView(BrowserWindowInterface* browser) {
-   auto* browser_elements = BrowserElements::From(browser);
-   if (!browser_elements) {
-@@ -78,6 +109,13 @@ bool BrowserWindowFullscreenController::ShouldHideUIForFullscreen() const {
-     return false;
-   }
+ bool BrowserWindowFullscreenController::IsForceFullscreen() const {
+   return force_fullscreen_;
+ }
+diff --git a/chrome/browser/ui/fullscreen/browser_window_fullscreen_controller.h b/chrome/browser/ui/fullscreen/browser_window_fullscreen_controller.h
+index 6881b29267a31..958d032199421 100644
+--- a/chrome/browser/ui/fullscreen/browser_window_fullscreen_controller.h
++++ b/chrome/browser/ui/fullscreen/browser_window_fullscreen_controller.h
+@@ -33,6 +33,11 @@ class BrowserWindowFullscreenController {
+   // Returns true if the UI should be hidden for fullscreen.
+   bool ShouldHideUIForFullscreen() const;
  
-+  // Checked after immersive mode so that it keeps its slide-down panel, and
-+  // before the widget test below because this is the case where the page is
-+  // fullscreen and the window deliberately is not.
-+  if (IsActiveTabContainedFullscreen(browser)) {
-+    return true;
-+  }
++  // True while the active tab holds a fullscreen that fills the window without
++  // the window leaving the desktop. The frame consults this to drop the
++  // titlebar, since the widget itself is not fullscreen.
++  bool IsContainedFullscreen() const;
 +
-   const BrowserFrameView* browser_frame_view = GetBrowserFrameView(browser);
-   if (!browser_frame_view) {
-     // Do not hide UI by default.
+   // True when we do not want to allow exiting fullscreen.
+   bool IsForceFullscreen() const;
+ 
 diff --git a/chrome/browser/ui/webui/settings/settings_localized_strings_provider.cc b/chrome/browser/ui/webui/settings/settings_localized_strings_provider.cc
-index d21c249464c61..e789e66ed3271 100644
+index d21c249464c61..5f21eedc43fd4 100644
 --- a/chrome/browser/ui/webui/settings/settings_localized_strings_provider.cc
 +++ b/chrome/browser/ui/webui/settings/settings_localized_strings_provider.cc
-@@ -634,6 +634,16 @@ void AddAppearanceStrings(content::WebUIDataSource* html_source,
+@@ -634,6 +634,17 @@ void AddAppearanceStrings(content::WebUIDataSource* html_source,
    };
    html_source->AddLocalizedStrings(kLocalizedStrings);
  
@@ -177,11 +243,12 @@ index d21c249464c61..e789e66ed3271 100644
 +  // is rewritten wholesale at build time to carry the product name, and a hunk
 +  // in there would be discarded by that step.
 +  html_source->AddString("containedFullscreen",
-+                         u"Keep full screen inside the window");
++                         u"Full screen stays inside the window");
 +  html_source->AddString(
 +      "containedFullscreenDesc",
-+      u"A video going full screen fills the tab rather than the whole display, "
-+      u"so the rest of your desktop stays where it is");
++      u"A video going full screen fills this window instead of the whole "
++      u"display, so the rest of your desktop stays where it is. Hold Ctrl "
++      u"while going full screen for the other one.");
 +
    html_source->AddBoolean("ntpSimplificationBookmarksBarEnabled",
                            base::FeatureList::IsEnabled(

@@ -4,8 +4,12 @@
   python3 utils/test_fullscreen.py
   python3 utils/test_fullscreen.py --headless
 
-Runs the same page twice, once with shiemi.contained_fullscreen off and once
-with it on, and compares what requestFullscreen() did to the window.
+Runs the same page four times, over both values of
+shiemi.contained_fullscreen and with Ctrl held or not, and compares what
+requestFullscreen() did to the window. The preference names the default and
+Ctrl asks for the other one, so contained is expected on exactly one of each
+pair - which is what makes this a test of the override rather than of the
+preference twice.
 
 Both runs have to reach fullscreen, or the comparison proves nothing: the
 difference being measured is whether the window grew to the display, not
@@ -100,8 +104,25 @@ def shoot(pid: int, out: Path) -> None:
     print(f"    shot               {width}x{height} -> {out}")
 
 
+def set_control(page, down: bool) -> None:
+    """Hold or release Ctrl the way a keyboard would.
+
+    The browser only learns about Ctrl from key events routed to the page, so
+    forging the request alone would never look modified.
+    """
+    page.call(
+        "Input.dispatchKeyEvent",
+        type="rawKeyDown" if down else "keyUp",
+        windowsVirtualKeyCode=17,
+        nativeVirtualKeyCode=17,
+        key="Control",
+        code="ControlLeft",
+        modifiers=2 if down else 0,
+    )
+
+
 def probe(binary: Path, http_port: int, contained: bool, headless: bool,
-          shot: Path | None = None) -> dict:
+          shot: Path | None = None, ctrl: bool = False) -> dict:
     devtools_port = free_port()
     profile = Path(tempfile.mkdtemp(prefix="shiemi-fs-"))
     write_pref(profile, contained)
@@ -135,6 +156,9 @@ def probe(binary: Path, http_port: int, contained: bool, headless: bool,
 
         before = measure(page)
 
+        if ctrl:
+            set_control(page, True)
+
         # requestFullscreen is gated on a user gesture, which CDP can forge.
         page.call(
             "Runtime.evaluate",
@@ -153,6 +177,9 @@ def probe(binary: Path, http_port: int, contained: bool, headless: bool,
             if after["fullscreenElement"] and after["outer"] != before["outer"]:
                 break
             time.sleep(0.1)
+
+        if ctrl:
+            set_control(page, False)
 
         if shot and not headless:
             shoot(proc.pid, shot)
@@ -175,6 +202,19 @@ def probe(binary: Path, http_port: int, contained: bool, headless: bool,
                     restored["inner"] == before["inner"]:
                 break
             time.sleep(0.1)
+
+        # Captured after the exit as well: the caption buttons are hidden on
+        # the way in, and a window that came back without a close button would
+        # pass every height check above.
+        #
+        # PrintWindow hands back the last composited frame, which after a
+        # fullscreen exit is still the fullscreen one, so the page is repainted
+        # first and given a moment to reach the compositor. Without this the
+        # capture shows the state before the exit and looks like a bug.
+        if shot and not headless:
+            page.evaluate("document.body.style.background = '#1b1b1b'")
+            time.sleep(1.5)
+            shoot(proc.pid, shot.with_stem(f"{shot.stem}-exit"))
 
         page.close()
         return {"before": before, "after": after, "restored": restored}
@@ -201,19 +241,27 @@ def main() -> int:
     server, http_port = serve()
     failures = []
     try:
-        for contained in (False, True):
-            name = "on " if contained else "off"
+        for pref, ctrl in ((False, False), (False, True),
+                           (True, False), (True, True)):
+            # Ctrl inverts the preference, so contained is expected on exactly
+            # one of the two, which is what makes this a real test of the
+            # override rather than of the preference twice.
+            expect_contained = pref != ctrl
+            name = f"pref {'on ' if pref else 'off'}  ctrl {'yes' if ctrl else 'no '}"
+
             shot = None
             if args.shot:
                 shot = args.shot.with_stem(
-                    f"{args.shot.stem}-{'on' if contained else 'off'}")
-            result = probe(args.binary, http_port, contained, args.headless,
-                           shot)
+                    f"{args.shot.stem}-{'on' if pref else 'off'}"
+                    f"{'-ctrl' if ctrl else ''}")
+            result = probe(args.binary, http_port, pref, args.headless, shot,
+                           ctrl)
             before, after = result["before"], result["after"]
             restored = result["restored"]
             took_over = after["outer"] >= after["screen"]
 
-            print(f"  {PREF} {name}")
+            print(f"  {name}  ->  expect"
+                  f" {'contained' if expect_contained else 'display'}")
             print(f"    fullscreenElement  {after['fullscreenElement']}")
             print(f"    outerHeight        {before['outer']} -> {after['outer']}"
                   f"  (display {after['screen']})")
@@ -225,18 +273,18 @@ def main() -> int:
 
             if restored["inner"] != before["inner"]:
                 failures.append(
-                    f"pref {name}: the chrome did not come back on exit"
+                    f"{name}: the chrome did not come back on exit"
                     f" ({before['inner']} -> {restored['inner']})")
             elif after["fullscreenElement"] != "box":
-                failures.append(f"pref {name}: the page never entered fullscreen")
-            elif contained and took_over:
-                failures.append("pref on: the window still took over the display")
-            elif contained and gained <= 0:
-                failures.append("pref on: the viewport did not grow, so the tab"
-                                " strip and toolbar are still taking their space")
-            elif not contained and not took_over:
-                failures.append("pref off: the window did not take over the display,"
-                                " so the two runs are indistinguishable")
+                failures.append(f"{name}: the page never entered fullscreen")
+            elif expect_contained and took_over:
+                failures.append(f"{name}: the window took over the display")
+            elif expect_contained and gained <= 0:
+                failures.append(f"{name}: the viewport did not grow, so the tab"
+                                " strip and toolbar still take their space")
+            elif not expect_contained and not took_over:
+                failures.append(f"{name}: the window did not take over the"
+                                " display")
     finally:
         server.shutdown()
 
@@ -246,8 +294,8 @@ def main() -> int:
             print(f"  {failure}")
         return 1
 
-    print("\ncontained fullscreen holds the page inside the window and"
-          " collapses the chrome; off, the window still goes to the display")
+    print("\nthe preference picks the default, Ctrl inverts it, and contained"
+          " fullscreen collapses the chrome without moving the window")
     return 0
 
 
