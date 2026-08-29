@@ -231,6 +231,56 @@ index 6881b29267a31..958d032199421 100644
    // True when we do not want to allow exiting fullscreen.
    bool IsForceFullscreen() const;
  
+diff --git a/chrome/browser/ui/views/frame/browser_frame_view_win.cc b/chrome/browser/ui/views/frame/browser_frame_view_win.cc
+index f829637e45840..f7705b8ac81ab 100644
+--- a/chrome/browser/ui/views/frame/browser_frame_view_win.cc
++++ b/chrome/browser/ui/views/frame/browser_frame_view_win.cc
+@@ -18,6 +18,7 @@
+ #include "chrome/app/chrome_dll_resource.h"
+ #include "chrome/browser/themes/theme_properties.h"
+ #include "chrome/browser/ui/color/chrome_color_id.h"
++#include "chrome/browser/ui/fullscreen/browser_window_fullscreen_controller.h"
+ #include "chrome/browser/ui/layout_constants.h"
+ #include "chrome/browser/ui/ui_features.h"
+ #include "chrome/browser/ui/view_ids.h"
+@@ -82,6 +83,12 @@ constexpr int kMaximizedLeftMargin = 2;
+ 
+ constexpr int kIconTitleSpacing = 5;
+ 
++bool IsContainedFullscreen(BrowserView* browser_view) {
++  const auto* controller =
++      BrowserWindowFullscreenController::From(browser_view->browser());
++  return controller && controller->IsContainedFullscreen();
++}
++
+ }  // namespace
+ 
+ // Wrapper around MinimizeButtonMetrics so that calls don't need to be routed
+@@ -631,6 +638,14 @@ int BrowserFrameViewWin::TitlebarHeight(bool restored) const {
+     return 0;
+   }
+ 
++  // A contained fullscreen hides the tabstrip, and this frame draws a titlebar
++  // whenever the tabstrip is gone, which would put a caption back above a
++  // fullscreen video. The widget is not fullscreen here, so the check above
++  // does not catch it.
++  if (IsContainedFullscreen(GetBrowserView()) && !restored) {
++    return 0;
++  }
++
+   // The titlebar's actual height is the same in restored and maximized, but
+   // some of it is above the screen in maximized mode. See the comment in
+   // FrameTopBorderThicknessPx().
+@@ -852,7 +867,8 @@ void BrowserFrameViewWin::LayoutTitleBar() {
+ void BrowserFrameViewWin::LayoutCaptionButtons() {
+   TRACE_EVENT0("views.frame", "BrowserFrameViewWin::LayoutCaptionButtons");
+ 
+-  caption_button_container_->SetVisible(!browser_widget()->IsFullscreen());
++  caption_button_container_->SetVisible(!browser_widget()->IsFullscreen() &&
++                                       !IsContainedFullscreen(GetBrowserView()));
+ 
+   const gfx::Size preferred_size =
+       caption_button_container_->GetPreferredSize();
 diff --git a/chrome/browser/ui/webui/settings/settings_localized_strings_provider.cc b/chrome/browser/ui/webui/settings/settings_localized_strings_provider.cc
 index d21c249464c61..5f21eedc43fd4 100644
 --- a/chrome/browser/ui/webui/settings/settings_localized_strings_provider.cc
