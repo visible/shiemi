@@ -7,9 +7,30 @@
 > what's different?
 
   duckduckgo by default.
-  no telemetry, no sign-in, nothing
-  phoned home on startup.
+  no telemetry, no sign-in.
   content blockers still work.
+
+  a cold profile, sitting idle, opens
+  one connection: the update check for
+  certificate revocation data, and
+  downloads 5 mb of security data.
+  before the trim it was 346 mb.
+
+> verify?
+
+  don't take any of that on faith.
+
+  python3 utils/audit_network.py --baseline
+  python3 utils/audit_components.py --baseline
+  python3 utils/check_defaults.py
+
+  the first fails if the browser reaches
+  a host it has no business reaching.
+  the second fails if it downloads
+  anything that isn't security data.
+  the third reads every shipped default
+  back out of a fresh profile, because a
+  misspelled pref is silent.
 
 > status?
 
