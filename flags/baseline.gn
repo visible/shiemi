@@ -22,3 +22,15 @@ chrome_pgo_phase = 0
 use_remoteexec = false
 
 treat_warnings_as_errors = false
+
+# Matches release.gn, because without it a development build runs a different
+# feature set from the shipped one and every measurement taken here describes a
+# browser nobody gets. testing/variations/fieldtrial_testing_config.json is
+# compiled in and applied by default in an unbranded build, and it force-enables
+# features the source marks disabled.
+#
+# Measured with utils/audit_components.py on a cold profile: it turns 346 MB of
+# component downloads into 28 MB. PreemptiveSodaDownload alone fetches the
+# speech recogniser and a language pack, 237 MB, with Live Caption switched off,
+# and AutoDownloadTranslateLanguagePacks adds a 79 MB translation model.
+disable_fieldtrial_testing_config = true
