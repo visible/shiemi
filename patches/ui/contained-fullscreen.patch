@@ -42,61 +42,64 @@ index aa327f72a8864..9ccbdfd87cdb4 100644
    registry->RegisterBooleanPref(prefs::kForceMaximizeOnFirstRun, false);
  #endif
 diff --git a/chrome/browser/ui/exclusive_access/exclusive_access_manager.cc b/chrome/browser/ui/exclusive_access/exclusive_access_manager.cc
-index 0404243c845d5..073e3778ef5d2 100644
+index 0404243c845d5..b5ab4b3b3a54f 100644
 --- a/chrome/browser/ui/exclusive_access/exclusive_access_manager.cc
 +++ b/chrome/browser/ui/exclusive_access/exclusive_access_manager.cc
 @@ -188,6 +188,21 @@ void ExclusiveAccessManager::OnTabClosing(WebContents* web_contents) {
  
  bool ExclusiveAccessManager::HandleUserKeyEvent(
      const input::NativeWebKeyboardEvent& event) {
-+  // Ctrl's own key-up does not reliably clear the modifier bit across
-+  // platforms, so the key code decides for Ctrl itself and the bitmask decides
++  // Shift's own key-up does not reliably clear the modifier bit across
++  // platforms, so the key code decides for Shift itself and the bitmask decides
 +  // for every other key, which also recovers the state after a lost key-up.
 +  const bool is_key_down =
 +      event.GetType() == input::NativeWebKeyboardEvent::Type::kRawKeyDown ||
 +      event.GetType() == input::NativeWebKeyboardEvent::Type::kKeyDown;
-+  if (event.windows_key_code == ui::VKEY_CONTROL ||
-+      event.windows_key_code == ui::VKEY_LCONTROL ||
-+      event.windows_key_code == ui::VKEY_RCONTROL) {
-+    control_down_ = is_key_down;
++  if (event.windows_key_code == ui::VKEY_SHIFT ||
++      event.windows_key_code == ui::VKEY_LSHIFT ||
++      event.windows_key_code == ui::VKEY_RSHIFT) {
++    shift_down_ = is_key_down;
 +  } else {
-+    control_down_ = (event.GetModifiers() &
-+                     blink::WebInputEvent::Modifiers::kControlKey) != 0;
++    shift_down_ = (event.GetModifiers() &
++                   blink::WebInputEvent::Modifiers::kShiftKey) != 0;
 +  }
 +
    if (event.windows_key_code != ui::VKEY_ESCAPE) {
      OnUserInput();
      return false;
 diff --git a/chrome/browser/ui/exclusive_access/exclusive_access_manager.h b/chrome/browser/ui/exclusive_access/exclusive_access_manager.h
-index 4a726e3df5352..3b02816d0035f 100644
+index 4a726e3df5352..bd4fad828b7a2 100644
 --- a/chrome/browser/ui/exclusive_access/exclusive_access_manager.h
 +++ b/chrome/browser/ui/exclusive_access/exclusive_access_manager.h
-@@ -87,6 +87,14 @@ class ExclusiveAccessManager {
+@@ -87,6 +87,17 @@ class ExclusiveAccessManager {
    // Called by Browser::ContentsMouseEvent.
    void OnUserInput();
  
-+  // Whether Ctrl is held right now, as last seen by HandleUserKeyEvent.
++  // Whether Shift is held right now, as last seen by HandleUserKeyEvent.
 +  //
 +  // A page's fullscreen request carries no modifiers, and there is no
-+  // browser-side hook for mouse events, so a Ctrl-click on a player's
-+  // fullscreen button can only be recognised by remembering that Ctrl went
-+  // down. Ctrl-clicking means Ctrl is still held when the request arrives.
-+  bool IsControlDown() const { return control_down_; }
++  // browser-side hook for mouse events, so a Shift-click on a player's
++  // fullscreen button can only be recognised by remembering that Shift went
++  // down. Shift-clicking means Shift is still held when the request arrives.
++  //
++  // Shift rather than Ctrl because Ctrl+F is find-in-page and Alt+F opens the
++  // app menu, so neither ever reaches a player that binds F to fullscreen.
++  bool IsShiftDown() const { return shift_down_; }
 +
    // Called by platform ExclusiveAccessExitBubble.
    void ExitExclusiveAccess();
  
-@@ -122,6 +130,8 @@ class ExclusiveAccessManager {
+@@ -122,6 +133,8 @@ class ExclusiveAccessManager {
        exclusive_access_controllers_;
    ExclusiveAccessPermissionManager permission_manager_;
  
-+  bool control_down_ = false;
++  bool shift_down_ = false;
 +
    std::optional<ui::ScopedUnownedUserData<ExclusiveAccessManager>>
        scoped_unowned_user_data_;
  
 diff --git a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
-index f597f2282a9e9..bdb92b817beae 100644
+index f597f2282a9e9..9484247e46ebe 100644
 --- a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 +++ b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 @@ -22,8 +22,10 @@
@@ -132,14 +135,14 @@ index f597f2282a9e9..bdb92b817beae 100644
 +    // alone. Excluded once the tab holds real fullscreen, so a nested request
 +    // stays on the path it started on.
 +    //
-+    // The preference names the default and Ctrl asks for the other one, so a
++    // The preference names the default and Shift asks for the other one, so a
 +    // player's own fullscreen button reaches both modes and neither is buried
 +    // in settings.
 +    Profile* const profile = exclusive_access_manager()->context()->GetProfile();
 +    const bool contained =
 +        profile &&
 +        (profile->GetPrefs()->GetBoolean(prefs::kContainedFullscreen) !=
-+         exclusive_access_manager()->IsControlDown()) &&
++         exclusive_access_manager()->IsShiftDown()) &&
 +        exclusive_access_tab() != web_contents;
 +    if (web_contents->IsBeingVisiblyCaptured() || contained) {
        FullscreenWithinTabHelper::CreateForWebContents(web_contents);
@@ -282,7 +285,7 @@ index f829637e45840..f7705b8ac81ab 100644
    const gfx::Size preferred_size =
        caption_button_container_->GetPreferredSize();
 diff --git a/chrome/browser/ui/webui/settings/settings_localized_strings_provider.cc b/chrome/browser/ui/webui/settings/settings_localized_strings_provider.cc
-index d21c249464c61..5f21eedc43fd4 100644
+index d21c249464c61..bec617bd6e16d 100644
 --- a/chrome/browser/ui/webui/settings/settings_localized_strings_provider.cc
 +++ b/chrome/browser/ui/webui/settings/settings_localized_strings_provider.cc
 @@ -634,6 +634,17 @@ void AddAppearanceStrings(content::WebUIDataSource* html_source,
@@ -297,8 +300,8 @@ index d21c249464c61..5f21eedc43fd4 100644
 +  html_source->AddString(
 +      "containedFullscreenDesc",
 +      u"A video going full screen fills this window instead of the whole "
-+      u"display, so the rest of your desktop stays where it is. Hold Ctrl "
-+      u"while going full screen for the other one.");
++      u"display, so the rest of your desktop stays where it is. Shift-click a "
++      u"player's full screen button for the other one.");
 +
    html_source->AddBoolean("ntpSimplificationBookmarksBarEnabled",
                            base::FeatureList::IsEnabled(

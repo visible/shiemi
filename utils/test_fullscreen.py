@@ -5,9 +5,9 @@
   python3 utils/test_fullscreen.py --headless
 
 Runs the same page four times, over both values of
-shiemi.contained_fullscreen and with Ctrl held or not, and compares what
+shiemi.contained_fullscreen and with Shift held or not, and compares what
 requestFullscreen() did to the window. The preference names the default and
-Ctrl asks for the other one, so contained is expected on exactly one of each
+Shift asks for the other one, so contained is expected on exactly one of each
 pair - which is what makes this a test of the override rather than of the
 preference twice.
 
@@ -104,25 +104,25 @@ def shoot(pid: int, out: Path) -> None:
     print(f"    shot               {width}x{height} -> {out}")
 
 
-def set_control(page, down: bool) -> None:
-    """Hold or release Ctrl the way a keyboard would.
+def set_shift(page, down: bool) -> None:
+    """Hold or release Shift the way a keyboard would.
 
-    The browser only learns about Ctrl from key events routed to the page, so
+    The browser only learns about Shift from key events routed to the page, so
     forging the request alone would never look modified.
     """
     page.call(
         "Input.dispatchKeyEvent",
         type="rawKeyDown" if down else "keyUp",
-        windowsVirtualKeyCode=17,
-        nativeVirtualKeyCode=17,
-        key="Control",
-        code="ControlLeft",
-        modifiers=2 if down else 0,
+        windowsVirtualKeyCode=16,
+        nativeVirtualKeyCode=16,
+        key="Shift",
+        code="ShiftLeft",
+        modifiers=8 if down else 0,
     )
 
 
 def probe(binary: Path, http_port: int, contained: bool, headless: bool,
-          shot: Path | None = None, ctrl: bool = False) -> dict:
+          shot: Path | None = None, shift: bool = False) -> dict:
     devtools_port = free_port()
     profile = Path(tempfile.mkdtemp(prefix="shiemi-fs-"))
     write_pref(profile, contained)
@@ -156,8 +156,8 @@ def probe(binary: Path, http_port: int, contained: bool, headless: bool,
 
         before = measure(page)
 
-        if ctrl:
-            set_control(page, True)
+        if shift:
+            set_shift(page, True)
 
         # requestFullscreen is gated on a user gesture, which CDP can forge.
         page.call(
@@ -178,8 +178,8 @@ def probe(binary: Path, http_port: int, contained: bool, headless: bool,
                 break
             time.sleep(0.1)
 
-        if ctrl:
-            set_control(page, False)
+        if shift:
+            set_shift(page, False)
 
         if shot and not headless:
             shoot(proc.pid, shot)
@@ -241,21 +241,22 @@ def main() -> int:
     server, http_port = serve()
     failures = []
     try:
-        for pref, ctrl in ((False, False), (False, True),
-                           (True, False), (True, True)):
-            # Ctrl inverts the preference, so contained is expected on exactly
+        for pref, shift in ((False, False), (False, True),
+                            (True, False), (True, True)):
+            # Shift inverts the preference, so contained is expected on exactly
             # one of the two, which is what makes this a real test of the
             # override rather than of the preference twice.
-            expect_contained = pref != ctrl
-            name = f"pref {'on ' if pref else 'off'}  ctrl {'yes' if ctrl else 'no '}"
+            expect_contained = pref != shift
+            name = (f"pref {'on ' if pref else 'off'}"
+                    f"  shift {'yes' if shift else 'no '}")
 
             shot = None
             if args.shot:
                 shot = args.shot.with_stem(
                     f"{args.shot.stem}-{'on' if pref else 'off'}"
-                    f"{'-ctrl' if ctrl else ''}")
+                    f"{'-shift' if shift else ''}")
             result = probe(args.binary, http_port, pref, args.headless, shot,
-                           ctrl)
+                           shift)
             before, after = result["before"], result["after"]
             restored = result["restored"]
             took_over = after["outer"] >= after["screen"]
@@ -294,7 +295,7 @@ def main() -> int:
             print(f"  {failure}")
         return 1
 
-    print("\nthe preference picks the default, Ctrl inverts it, and contained"
+    print("\nthe preference picks the default, Shift inverts it, and contained"
           " fullscreen collapses the chrome without moving the window")
     return 0
 
