@@ -16,6 +16,17 @@
   downloads 5 mb of security data.
   before the trim it was 346 mb.
 
+> faster?
+
+  starts in 287 ms where the upstream
+  build of the same version takes 423,
+  and holds eight tabs in 16% less
+  memory.
+
+  not a compiler trick — both builds
+  carry the same optimisations. it is
+  the work that never starts.
+
 > verify?
 
   don't take any of that on faith.
@@ -23,6 +34,7 @@
   python3 utils/audit_network.py --baseline
   python3 utils/audit_components.py --baseline
   python3 utils/check_defaults.py
+  python3 utils/bench.py --compare <binary>
 
   the first fails if the browser reaches
   a host it has no business reaching.
@@ -30,7 +42,9 @@
   anything that isn't security data.
   the third reads every shipped default
   back out of a fresh profile, because a
-  misspelled pref is silent.
+  misspelled pref is silent. the fourth
+  re-runs the numbers above against any
+  binary you point it at.
 
 > status?
 

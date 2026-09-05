@@ -78,6 +78,21 @@ treat_warnings_as_errors = false
 # LTO, so this delta is the cost of not having them, not a lead over them. No
 # public claim can rest on these two numbers.
 #
+# For a claim that can be made in public, the comparison has to be an upstream
+# build somebody actually ships. Upstream publishes exact-version binaries at
+# chrome-for-testing-public, so 151.0.7922.138 stands in for stock: same 7922
+# branch as our .174, differing only in later security fixes, and already
+# official, so it carries PGO and LTO too. Seven runs each, medians:
+#
+#   startup   287 ms vs 423 ms   -32%
+#   memory   1214 MB vs 1439 MB  -16%   (8 tabs, whole process tree)
+#
+# Identical flags, a throwaway profile per run and no cache carried over, so
+# what is left is the patch set: nothing upstream starts at launch to check an
+# account, fetch a variations seed or pull a component runs here. That is a
+# product difference rather than a compiler one, which is why it survives
+# against a baseline that is optimised the same way we are.
+#
 # There is nothing further to gain from gn arguments here. Anything beyond this
 # has to come from measurement, not flags.
 #
