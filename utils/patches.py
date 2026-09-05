@@ -16,10 +16,13 @@ produces a patch git refuses to apply, and the failure looks like a conflict.
 """
 
 import argparse
+import re
 import subprocess
 import sys
 
+import build
 import config
+import rebrand
 
 
 def git_apply(src, patch, reverse=False, dry_run=False) -> tuple[bool, str]:
@@ -43,6 +46,49 @@ def resolve(names):
     return paths
 
 
+def owners(src) -> dict:
+    """Tree path -> what in this repo is responsible for changing it.
+
+    Four things write into the checkout: the patch series, the branding art
+    overlay, the WebUI token overlay and the string rewriter. Only the first
+    is a patch; the other three are applied by build.py and deliberately not
+    diffs, so a change to one of their targets is not a lost edit.
+    """
+    owned = {}
+    for entry in config.read_series():
+        text = (config.PATCHES_DIR / entry).read_text(encoding="utf-8",
+                                                      errors="replace")
+        for match in re.finditer(r"^\+\+\+ b/(\S+)", text, re.M):
+            owned[match.group(1)] = entry
+    for path in build.branded_paths():
+        owned[path] = "branding overlay"
+    for path in build.STYLE_OVERLAYS.values():
+        owned[path] = "styles overlay"
+    for path in rebrand.resolve(src):
+        owned[str(path).replace("\\", "/")] = "rebrand.py"
+    return owned
+
+
+def unowned_edits(src) -> list:
+    """Tree modifications no patch or build step accounts for.
+
+    These are the edits that get lost: they work, so nothing complains, and
+    the next clean checkout or revert silently drops them.
+    """
+    proc = subprocess.run(["git", "-C", str(src), "status", "--short"],
+                          capture_output=True, text=True)
+    accounted = owners(src)
+    loose = []
+    for line in proc.stdout.splitlines():
+        state, path = line[:2].strip(), line[3:].strip()
+        if state == "??":
+            continue  # Untracked: toolchain and build output, not our edits.
+        path = path.split(" -> ")[-1].strip('"').replace("\\", "/")
+        if path not in accounted:
+            loose.append(path)
+    return loose
+
+
 def cmd_status(src, patches) -> int:
     if not patches:
         print("series is empty - no patches to apply")
@@ -61,6 +107,17 @@ def cmd_status(src, patches) -> int:
         print(f"  {state:<9} {path.relative_to(config.PATCHES_DIR)}")
         if state == "CONFLICT" and err:
             print(f"            {err.splitlines()[0]}")
+
+    loose = unowned_edits(src)
+    if loose:
+        print(f"\n{len(loose)} tree edit(s) nothing in this repo accounts for:")
+        for path in loose:
+            print(f"  {path}")
+        print("Capture them into a patch, or revert them in the checkout."
+              " Left alone they are lost at the next clean checkout.")
+        failed += 1
+    else:
+        print("\nevery tree edit is accounted for by a patch or a build step")
     return 1 if failed else 0
 
 
