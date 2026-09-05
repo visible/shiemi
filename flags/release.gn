@@ -66,6 +66,18 @@ treat_warnings_as_errors = false
 # decision rather than two. optimize_webui is !is_debug, so already on. NaCl is
 # no longer in the tree to switch off.
 #
+# Measured, so the build cost is justified rather than assumed. Against
+# out/baseline, same tree and same 151.0.7922.174, five runs each, medians:
+#
+#   startup   282 ms vs 436 ms   -35%
+#   memory   1205 MB vs 1731 MB  -30%   (8 tabs, whole process tree)
+#
+# Read that as what is_official_build buys over a build tuned for compile time,
+# and nothing more. It is not a comparison against any browser anyone ships,
+# because out/baseline is not one: every shipping Chromium already has PGO and
+# LTO, so this delta is the cost of not having them, not a lead over them. No
+# public claim can rest on these two numbers.
+#
 # There is nothing further to gain from gn arguments here. Anything beyond this
 # has to come from measurement, not flags.
 #
