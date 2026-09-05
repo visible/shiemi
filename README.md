@@ -8,15 +8,21 @@
 
   duckduckgo by default.
   no telemetry, no sign-in.
-  content blockers still work.
+  ublock origin on, and removable.
 
   a cold profile, sitting idle, opens
-  one connection: the component update
-  check. it pulls 5 mb — revoked
-  certificates, certificate transparency
-  logs, a password-strength wordlist,
-  hyphenation dictionaries.
+  one connection of its own: the
+  component update check. it pulls 5 mb —
+  revoked certificates, certificate
+  transparency logs, a password-strength
+  wordlist, hyphenation dictionaries.
   before the trim it was 346 mb.
+
+  the blocker adds six more, all of them
+  filter lists — text files, no cookies,
+  nothing about what you browsed, fetched
+  from the people who publish them. take
+  the blocker out and they stop.
 
 > faster?
 
@@ -37,6 +43,7 @@
   python3 utils/audit_components.py --baseline
   python3 utils/check_defaults.py
   python3 utils/check_search_default.py
+  python3 utils/check_blocker.py
   python3 utils/bench.py --compare <binary>
 
   the first fails if the browser reaches
@@ -48,6 +55,10 @@
   misspelled pref is silent. the fourth
   checks the search engine survives in
   regions whose engine list is short.
+  the fifth watches the network stack
+  while the blocker kills an ad request,
+  and fails if it arrives disabled or
+  can't be uninstalled.
   the last re-runs the numbers above
   against any binary you point it at.
 

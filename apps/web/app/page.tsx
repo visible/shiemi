@@ -22,8 +22,8 @@ export default function Home() {
         <h1>You’re someone, not a datapoint.</h1>
 
         <p className="lede">
-          A Chromium browser with the calls home taken out, and the extension
-          API that content blockers actually need left in.
+          A Chromium browser with the calls home taken out, uBlock Origin
+          already on, and the extension API it actually needs left in.
         </p>
       </div>
 
