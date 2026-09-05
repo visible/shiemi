@@ -115,9 +115,29 @@ def check_rebrand_collision(entry: str, text: str, problems: list[str]) -> None:
             )
 
 
+def check_shared_files(owners: dict[str, str], entry: str, text: str,
+                       problems: list[str]) -> None:
+    """Each Chromium file belongs to exactly one patch.
+
+    Every patch is captured as a diff against a pristine tree, so two patches
+    touching one file both carry the whole change to it, and the second to
+    apply is rejected for context the first already consumed. Splitting the
+    hunks by hand is not a fix either, since the next capture merges them back.
+    """
+    for raw in TOUCHES.findall(text):
+        path = raw.strip()
+        first = owners.setdefault(path, entry)
+        if first != entry:
+            problems.append(
+                f"{entry}: also patches {path}, owned by {first}. Fold the two"
+                " together or move the file so exactly one patch owns it"
+            )
+
+
 def main() -> int:
     problems: list[str] = []
     entries = check_series(problems)
+    owners: dict[str, str] = {}
 
     for entry in entries:
         path = config.PATCHES_DIR / entry
@@ -128,6 +148,7 @@ def main() -> int:
         check_endings(entry, raw, problems)
         check_hunks(entry, text, problems)
         check_rebrand_collision(entry, text, problems)
+        check_shared_files(owners, entry, text, problems)
 
     if problems:
         for problem in problems:
