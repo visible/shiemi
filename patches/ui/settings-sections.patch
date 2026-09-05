@@ -204,10 +204,10 @@ index a635753b6ce48..40622266d6dac 100644
              class="cr-nav-menu-item"
 diff --git a/chrome/browser/resources/settings/shiemi_page/shiemi_page.html b/chrome/browser/resources/settings/shiemi_page/shiemi_page.html
 new file mode 100644
-index 0000000000000..7bd405dc03c32
+index 0000000000000..358d69b846303
 --- /dev/null
 +++ b/chrome/browser/resources/settings/shiemi_page/shiemi_page.html
-@@ -0,0 +1,9 @@
+@@ -0,0 +1,15 @@
 +  <style include="settings-shared"></style>
 +  <settings-section page-title="$i18n{shiemiPageTitle}"
 +      class="cr-centered-card-container">
@@ -215,6 +215,12 @@ index 0000000000000..7bd405dc03c32
 +        pref="{{prefs.shiemi.contained_fullscreen}}"
 +        label="$i18n{containedFullscreen}"
 +        sub-label="$i18n{containedFullscreenDesc}">
++    </settings-toggle-button>
++
++    <settings-toggle-button class="hr" id="domainOnlyUrl"
++        pref="{{prefs.shiemi.domain_only_url}}"
++        label="$i18n{domainOnlyUrl}"
++        sub-label="$i18n{domainOnlyUrlDesc}">
 +    </settings-toggle-button>
 +  </settings-section>
 diff --git a/chrome/browser/resources/settings/shiemi_page/shiemi_page.ts b/chrome/browser/resources/settings/shiemi_page/shiemi_page.ts
@@ -273,10 +279,10 @@ index 0000000000000..e7266e06edded
 +
 +customElements.define(SettingsShiemiPageElement.is, SettingsShiemiPageElement);
 diff --git a/chrome/browser/ui/webui/settings/settings_localized_strings_provider.cc b/chrome/browser/ui/webui/settings/settings_localized_strings_provider.cc
-index d21c249464c61..a2185d70f2555 100644
+index d21c249464c61..4308ebfdc82d6 100644
 --- a/chrome/browser/ui/webui/settings/settings_localized_strings_provider.cc
 +++ b/chrome/browser/ui/webui/settings/settings_localized_strings_provider.cc
-@@ -634,6 +634,18 @@ void AddAppearanceStrings(content::WebUIDataSource* html_source,
+@@ -634,6 +634,24 @@ void AddAppearanceStrings(content::WebUIDataSource* html_source,
    };
    html_source->AddLocalizedStrings(kLocalizedStrings);
  
@@ -291,6 +297,12 @@ index d21c249464c61..a2185d70f2555 100644
 +      u"A video going full screen fills this window instead of the whole "
 +      u"display, so the rest of your desktop stays where it is. Shift-click a "
 +      u"player's full screen button for the other one.");
++  html_source->AddString("domainOnlyUrl", u"Show only the site name");
++  html_source->AddString(
++      "domainOnlyUrlDesc",
++      u"The address bar shows the site you are on and leaves off the rest of "
++      u"the address. Click it to see and edit the whole thing. Turned off "
++      u"automatically on a page with a certificate problem.");
 +
    html_source->AddBoolean("ntpSimplificationBookmarksBarEnabled",
                            base::FeatureList::IsEnabled(
