@@ -104,6 +104,13 @@ def cmd_revert(src, patches) -> int:
 
 
 def cmd_capture(src, name, paths) -> int:
+    # git diff ignores untracked files, so a patch that adds a file would come
+    # out silently missing it and fail at build time instead of here. Recording
+    # intent to add is enough to make the diff include it, and is a no-op on
+    # files already tracked.
+    subprocess.run(["git", "-C", str(src), "add", "--intent-to-add", "--",
+                    *paths], capture_output=True, text=True)
+
     proc = subprocess.run(
         ["git", "-C", str(src), "diff", "--", *paths],
         capture_output=True,
@@ -125,6 +132,17 @@ def cmd_capture(src, name, paths) -> int:
     files = sum(1 for line in proc.stdout.splitlines()
                 if line.startswith("diff --git "))
     print(f"wrote {out.relative_to(config.PATCHES_DIR)} ({files} file(s))")
+
+    # The tree it was just taken from is the one place it is guaranteed to
+    # reverse cleanly, so a failure here means the patch does not describe the
+    # tree and never will. A file written with CRLF does this: git normalises
+    # the diff to LF, so the patch looks fine and matches nothing.
+    ok, err = git_apply(src, out, reverse=True, dry_run=True)
+    if not ok:
+        print(f"but it does not reverse-apply to the tree it came from:\n{err}",
+              file=sys.stderr)
+        return 1
+
     if name not in config.read_series():
         print(f"note: {name} is not in patches/series yet")
     return 0
