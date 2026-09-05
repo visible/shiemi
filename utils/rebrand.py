@@ -44,6 +44,17 @@ CHROME = re.compile(
 )
 
 MESSAGE = re.compile(r"(<message\b[^>]*>)(.*?)(</message>)", re.DOTALL)
+NAME = re.compile(r'\bname="([^"]+)"')
+
+# Messages whose body is replaced outright, because the rules above cannot
+# reach them: KEEP protects "Chromium Authors" as attribution, which is right
+# for the copyright line and wrong for this one. It is the Windows installer's
+# Publisher field, the shortcut publisher and the company name on the About
+# page, so leaving it had Add/Remove Programs crediting someone else for a
+# browser called Shiemi. The copyright message beside it is untouched, and
+# provenance stays in LICENSE and CREDITS.
+REPLACE_WHOLE = ("IDS_ABOUT_VERSION_COMPANY_NAME",)
+BODY = re.compile(r"^(\s*)(.*?)(\s*)$", re.DOTALL)
 
 # google_chrome_strings.grd is never compiled in an unbranded build, and
 # components_strings.grd holds no strings of its own - all 68 of its part files
@@ -73,6 +84,14 @@ def rewrite(path: Path, product: str = PRODUCT) -> int:
     def replace(match: re.Match) -> str:
         nonlocal changed
         head, body, tail = match.groups()
+        name = NAME.search(head)
+        if name and name.group(1) in REPLACE_WHOLE:
+            # Keep the surrounding whitespace: grit is indentation-sensitive
+            # about nothing, but the diff should stay readable.
+            lead, text, trail = BODY.match(body).groups()
+            if text != product:
+                changed += 1
+            return f"{head}{lead}{product}{trail}{tail}"
         if "Chromium" not in body and "Chrome" not in body:
             return match.group(0)
         rebranded = "".join(

@@ -115,6 +115,45 @@ class Rewrite(unittest.TestCase):
         self.assertEqual(self.tmp.stat().st_mtime_ns, before)
 
 
+class WholeBodyReplacement(unittest.TestCase):
+    """The publisher name moves; the copyright notice beside it must not."""
+
+    GRD = (
+        '<message name="IDS_ABOUT_VERSION_COMPANY_NAME" desc="Company name">\n'
+        '  The Chromium Authors\n'
+        '</message>\n'
+        '<message name="IDS_ABOUT_VERSION_COPYRIGHT" desc="Copyright">\n'
+        '  Copyright 2026 The Chromium Authors. All rights reserved.\n'
+        '</message>\n'
+    )
+
+    def rewrite(self, text: str) -> str:
+        root = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, root, True)
+        path = root / "chromium_strings.grd"
+        path.write_text(text, encoding="utf-8")
+        rebrand.rewrite(path)
+        return path.read_text(encoding="utf-8")
+
+    def test_company_name_becomes_the_product(self):
+        out = self.rewrite(self.GRD)
+        self.assertIn(f"  {rebrand.PRODUCT}\n</message>", out)
+        self.assertNotIn("The Chromium Authors\n</message>", out)
+
+    def test_the_copyright_notice_survives(self):
+        out = self.rewrite(self.GRD)
+        self.assertIn(
+            "Copyright 2026 The Chromium Authors. All rights reserved.", out)
+
+    def test_indentation_is_preserved(self):
+        out = self.rewrite(self.GRD)
+        self.assertIn(f'desc="Company name">\n  {rebrand.PRODUCT}\n', out)
+
+    def test_running_twice_changes_nothing(self):
+        once = self.rewrite(self.GRD)
+        self.assertEqual(self.rewrite(once), once)
+
+
 class Resolve(unittest.TestCase):
     """A pattern that matches nothing must stop the build, not the strings."""
 
