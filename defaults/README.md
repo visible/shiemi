@@ -33,6 +33,12 @@ change.
 | `payments.can_make_payment_enabled` | Defaults to true, letting a site ask whether the browser has a payment method before the user agrees to anything. Answering false costs a "pay with browser" button that has nothing behind it on a fresh profile anyway. |
 | `https_first_balanced_mode_enabled` | Upgrades navigations to HTTPS without the hard failure of full HTTPS-Only. Chromium decides this with a "typically secure user" heuristic, but skips the heuristic entirely once the pref has a value, so setting it makes the behaviour deterministic. |
 
+## The blocker we ship
+
+| Key | Why |
+| --- | --- |
+| `extensions.pinned_extensions` | The bundled content blocker's own id, so its icon sits in the toolbar from the first launch. Without this the extension is installed and working but has no visible control: its popup is where per-site rules and the "off on this site" switch live, and there is no other route to them. The id is fixed by the key that signed the release, and `tests/test_build.py` checks it still matches the one `utils/fetch_ublock.py` ships. |
+
 ## Surfaces we do not want in the UI
 
 | Key | Why |

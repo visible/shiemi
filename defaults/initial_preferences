@@ -41,6 +41,9 @@
     "pinned_actions": [],
     "pinned_chrome_labs_migration_complete": true
   },
+  "extensions": {
+    "pinned_extensions": ["fkgkibajhfbepljeaefdnfnegdcjomkh"]
+  },
   "omnibox": {
     "show_ai_mode_omnibox_button": false,
     "show_google_lens_shortcut": false

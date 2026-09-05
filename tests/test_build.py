@@ -13,6 +13,7 @@ upstream's blue palette, or strings that still say Chrome.
 These tests point the steps at an empty tree and require them to complain.
 """
 
+import json
 import shutil
 import sys
 import tempfile
@@ -23,6 +24,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "utils"))
 
 import build
+import fetch_ublock
 
 
 class EmptyTree(unittest.TestCase):
@@ -86,6 +88,28 @@ class BrandedPaths(unittest.TestCase):
         for relative in build.branded_paths():
             self.assertNotIn("\\", relative)
             self.assertFalse(relative.startswith("/"))
+
+
+class BundledBlocker(unittest.TestCase):
+    """The blocker's id is written down twice and must not drift.
+
+    initial_preferences pins the toolbar icon by id, and the id is fixed by
+    whichever key signed the release. If a future release is signed with a
+    different key, the pin silently points at nothing: the blocker still
+    works, its icon is just gone, which is the kind of thing nobody notices.
+    """
+
+    def test_the_pinned_id_is_the_one_being_shipped(self):
+        defaults = json.loads(
+            (ROOT / "defaults" / "initial_preferences").read_text("utf-8"))
+        self.assertEqual(defaults["extensions"]["pinned_extensions"],
+                         [fetch_ublock.EXTENSION_ID])
+
+    def test_the_pins_agree_with_each_other(self):
+        self.assertIn(fetch_ublock.VERSION, fetch_ublock.URL)
+        self.assertEqual(len(fetch_ublock.SHA256), 64)
+        self.assertEqual(len(fetch_ublock.EXTENSION_ID), 32)
+        self.assertTrue(fetch_ublock.EXTENSION_ID.islower())
 
 
 if __name__ == "__main__":
