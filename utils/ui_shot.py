@@ -9,7 +9,11 @@ run replaces it with the new tab page. So the URL goes over DevTools once the
 browser is up, which also gives us a load event to wait on instead of a guess.
 
 The profile is fresh every time, so what gets photographed is what a new user
-sees, shipped defaults included.
+sees, shipped defaults included - except under --headless, which skips first
+run and therefore never reads initial_preferences. A headless shot of
+chrome://settings/privacy says third-party cookies are allowed, because in
+that profile they are. Drop --headless whenever a default is what is being
+checked.
 """
 
 import argparse
