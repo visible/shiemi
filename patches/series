@@ -28,5 +28,6 @@ ui/settings-sections.patch
 ui/no-avatar-button.patch
 ui/contained-fullscreen.patch
 ui/minimal-chrome.patch
+ui/flat-tab-strip-controls.patch
 ui/brand-theme.patch
 ui/minimal-new-tab-page.patch
