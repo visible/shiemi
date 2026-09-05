@@ -19,7 +19,43 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "utils"))
 
 import audit_components
+import audit_network
 import check_defaults
+
+
+class HostsAllowed(unittest.TestCase):
+    """The host decision, which was wrong in a way that printed green.
+
+    The reporting loop reused the name holding the allowed list for its own
+    per-host verdict, so the list became a bool on the first iteration. With
+    one unexpected host and nothing else, the gate printed the host with its
+    warning marker and still exited 0.
+    """
+
+    ALLOWED = ["example.com", "ublockorigin.pages.dev"]
+
+    def test_an_exact_host_is_allowed(self):
+        self.assertTrue(audit_network.allows("example.com", self.ALLOWED))
+
+    def test_a_subdomain_is_allowed(self):
+        self.assertTrue(audit_network.allows("cdn.example.com", self.ALLOWED))
+
+    def test_an_unrelated_host_is_not(self):
+        self.assertFalse(audit_network.allows("example.org", self.ALLOWED))
+
+    def test_a_suffix_that_is_not_a_subdomain_is_not(self):
+        """notexample.com ends with the entry but is a different domain."""
+        self.assertFalse(audit_network.allows("notexample.com", self.ALLOWED))
+
+    def test_nothing_is_allowed_by_an_empty_list(self):
+        self.assertFalse(audit_network.allows("example.com", []))
+
+    def test_the_baseline_file_parses_and_is_not_empty(self):
+        hosts = audit_network.read_baseline(ROOT / "tests" / "network-allowed.txt")
+        self.assertTrue(hosts)
+        for host in hosts:
+            self.assertNotIn("#", host)
+            self.assertEqual(host, host.strip())
 
 
 class AllowList(unittest.TestCase):

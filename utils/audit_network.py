@@ -70,6 +70,11 @@ def read_baseline(path: Path) -> list:
     return hosts
 
 
+def allows(host: str, allowed) -> bool:
+    """Whether host is covered by the allowed list, subdomains included."""
+    return any(host == entry or host.endswith(f".{entry}") for entry in allowed)
+
+
 def annotation_hash(name: str) -> int:
     """Chromium's consteval hash over an annotation's unique id."""
     value = 0
@@ -212,16 +217,13 @@ def main() -> int:
         print("no external hosts contacted")
         return 0
 
-    def is_allowed(host: str) -> bool:
-        return any(host == a or host.endswith(f".{a}") for a in allowed)
-
     width = max(len(host) for host in counts)
     unexpected = []
     for host, count in counts.most_common():
-        allowed = is_allowed(host)
-        if not allowed:
+        permitted = allows(host, allowed)
+        if not permitted:
             unexpected.append(host)
-        mark = "    " if allowed else "  ! "
+        mark = "    " if permitted else "  ! "
         print(f"{mark}{host.ljust(width)}  {count}")
 
         for (name, path), n in blamed[host].most_common():
@@ -234,7 +236,7 @@ def main() -> int:
                 print(f"        {n:>3}  {endpoint}")
 
     print(f"\n{len(counts)} hosts, {sum(counts.values())} requests")
-    if allowed and unexpected:
+    if unexpected:
         source = args.baseline if args.baseline else "--allow"
         print(f"{len(unexpected)} not in {source}")
         return 1
