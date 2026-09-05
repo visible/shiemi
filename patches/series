@@ -33,3 +33,4 @@ ui/minimal-chrome.patch
 ui/flat-tab-strip-controls.patch
 ui/brand-theme.patch
 ui/minimal-new-tab-page.patch
+packaging/installer-defaults.patch

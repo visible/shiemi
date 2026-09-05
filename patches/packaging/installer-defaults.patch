@@ -1,0 +1,12 @@
+diff --git a/chrome/installer/mini_installer/chrome.release b/chrome/installer/mini_installer/chrome.release
+index 5add215198e87..d52f3274f2687 100644
+--- a/chrome/installer/mini_installer/chrome.release
++++ b/chrome/installer/mini_installer/chrome.release
+@@ -8,6 +8,7 @@
+ #
+ chrome.exe: %(ChromeDir)s\
+ chrome_proxy.exe: %(ChromeDir)s\
++initial_preferences: %(ChromeDir)s\
+ #
+ # Chrome version dir assembly manifest.
+ # The name of this file must match the name of the version dir, so we cannot

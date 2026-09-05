@@ -34,8 +34,12 @@ import sys
 import config
 
 INSTALLER = "mini_installer.exe"
-STAGED_ROOT = ("gen", "chrome", "installer", "mini_installer", "Chrome-bin")
 DEFAULTS = "initial_preferences"
+
+# The archive stages the install directory under a name of its own choosing
+# inside the mini_installer gen directory, so it is found rather than spelled
+# out: the path has an interior level that is not ours to depend on.
+STAGED_GLOB = "gen/chrome/installer/mini_installer/**/Chrome-bin"
 
 
 def check_defaults(out_path) -> None:
@@ -44,7 +48,14 @@ def check_defaults(out_path) -> None:
     if not source.is_file():
         raise SystemExit(f"missing {source}")
 
-    staged = out_path.joinpath(*STAGED_ROOT) / DEFAULTS
+    staged_dirs = sorted(out_path.glob(STAGED_GLOB))
+    if not staged_dirs:
+        raise SystemExit(
+            f"no staged install directory under {out_path / STAGED_GLOB}.\n"
+            f"The installer archive has not been built here."
+        )
+
+    staged = staged_dirs[0] / DEFAULTS
     if not staged.is_file():
         raise SystemExit(
             f"{DEFAULTS} is not in the installer archive ({staged}).\n"
