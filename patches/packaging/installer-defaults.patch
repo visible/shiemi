@@ -10,3 +10,23 @@ index 5add215198e87..d52f3274f2687 100644
  #
  # Chrome version dir assembly manifest.
  # The name of this file must match the name of the version dir, so we cannot
+diff --git a/chrome/installer/setup/install_worker.cc b/chrome/installer/setup/install_worker.cc
+index 59679ed4c8b5d..f3457c38e38f3 100644
+--- a/chrome/installer/setup/install_worker.cc
++++ b/chrome/installer/setup/install_worker.cc
+@@ -305,6 +305,15 @@ void AddChromeWorkItems(const InstallParams& install_params,
+       WorkItem::MoveTreeOptions{.check_for_duplicates = check_for_duplicates,
+                                 .lenient_deletion = true});
+ 
++  // First run reads initial_preferences from the browser's own directory, and
++  // nothing else in the install puts it there: only the version directory,
++  // chrome.exe and chrome_proxy.exe are moved out of the archive.
++  install_list
++      ->AddCopyTreeWorkItem(src_path.AppendASCII("initial_preferences"),
++                            target_path.AppendASCII("initial_preferences"),
++                            temp_path)
++      ->set_best_effort(true);
++
+   // Copy installer in install directory.
+   AddInstallerCopyTasks(install_params, install_list);
+ 

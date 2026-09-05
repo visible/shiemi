@@ -55,10 +55,18 @@ def lookup(prefs: dict, path: str):
     return node
 
 
-def seed_and_launch(binary: Path, wait: int) -> dict:
+def seed_and_launch(binary: Path, wait: int, seed: bool = True) -> dict:
     """Run once against a fresh profile and return the prefs it wrote."""
     shipped = binary.parent / "initial_preferences"
-    shutil.copyfile(DEFAULTS_FILE, shipped)
+    if seed:
+        shutil.copyfile(DEFAULTS_FILE, shipped)
+    elif not shipped.exists():
+        raise SystemExit(
+            f"no initial_preferences beside {binary}\n"
+            "The installer did not place it, so this browser ships with"
+            " Chromium's defaults and none of ours.")
+    elif shipped.read_bytes() != DEFAULTS_FILE.read_bytes():
+        raise SystemExit(f"{shipped} differs from {DEFAULTS_FILE}")
 
     profile = Path(tempfile.mkdtemp(prefix="shiemi-defaults-"))
     proc = subprocess.Popen([
@@ -93,6 +101,9 @@ def main() -> int:
     parser.add_argument("--binary", type=Path, default=DEFAULT_BINARY)
     parser.add_argument("--wait", type=int, default=25,
                         help="seconds before reading the prefs back")
+    parser.add_argument("--as-installed", action="store_true",
+                        help="trust the file already beside the binary rather"
+                             " than copying ours in, to test a real install")
     args = parser.parse_args()
 
     if not args.binary.exists():
@@ -102,7 +113,7 @@ def main() -> int:
     print(f"binary   {args.binary}")
     print(f"checking {len(wanted)} shipped default(s)\n")
 
-    prefs = seed_and_launch(args.binary, args.wait)
+    prefs = seed_and_launch(args.binary, args.wait, seed=not args.as_installed)
 
     problems = []
     for path, expected in sorted(wanted.items()):
