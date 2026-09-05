@@ -349,45 +349,66 @@ def measure_web(binary: Path, name: str, runs: int, timeout: float) -> list:
         template = make_template(binary, workspace)
         samples = []
         for i in range(runs):
-            browser, target = start(binary, template, workspace, f"run{i}",
-                                    [spec["url"]], timeout=120)
-            try:
-                deadline = time.monotonic() + timeout
-                if spec["start"]:
-                    # MotionMark's button is in the static markup, so it says
-                    # nothing about whether the suites have loaded, and calling
-                    # its handler too early fails silently.
-                    time.sleep(8)
-                    while time.monotonic() < deadline:
-                        try:
-                            if target.evaluate(spec["start"]):
-                                break
-                        except RuntimeError:
-                            pass  # Driver script not evaluated yet.
-                        time.sleep(2)
-                    else:
-                        raise RuntimeError(f"{name} never became startable")
-                score = None
-                while time.monotonic() < deadline and score is None:
-                    try:
-                        score = target.evaluate(spec["score"])
-                    except RuntimeError:
-                        score = None  # Page still navigating.
-                    if score is None:
-                        time.sleep(2)
-                if score is None:
-                    raise RuntimeError(
-                        f"{name} produced no score in {timeout:.0f}s - the page "
-                        "layout may have changed, check the selector"
-                    )
-                samples.append(float(score))
-                target.close()
-            finally:
-                browser.close()
+            for attempt in range(2):
+                try:
+                    samples.append(
+                        one_web_run(binary, template, workspace, name, i,
+                                    timeout))
+                    break
+                except (OSError, RuntimeError) as exc:
+                    # A renderer dying takes the devtools socket with it, so a
+                    # connection reset is the symptom rather than the cause.
+                    # These suites run for minutes and do it occasionally.
+                    print(f"    run {i + 1}/{runs}: "
+                          f"{type(exc).__name__}: {str(exc)[:70]}"
+                          + (", retrying" if attempt == 0 else ", giving up"))
+            else:
+                continue
             print(f"    run {i + 1}/{runs}: {samples[-1]:.2f} {spec['unit']}")
         return samples
     finally:
         shutil.rmtree(workspace, ignore_errors=True)
+
+
+def one_web_run(binary: Path, template: Path, workspace: Path, name: str,
+                index: int, timeout: float) -> float:
+    spec = WEB_BENCHMARKS[name]
+    browser, target = start(binary, template, workspace, f"run{index}",
+                            [spec["url"]], timeout=120)
+    try:
+        deadline = time.monotonic() + timeout
+        if spec["start"]:
+            # MotionMark's button is in the static markup, so it says nothing
+            # about whether the suites have loaded, and calling its handler
+            # too early fails silently.
+            time.sleep(8)
+            while time.monotonic() < deadline:
+                try:
+                    if target.evaluate(spec["start"]):
+                        break
+                except RuntimeError:
+                    pass  # Driver script not evaluated yet.
+                time.sleep(2)
+            else:
+                raise RuntimeError(f"{name} never became startable")
+
+        score = None
+        while time.monotonic() < deadline and score is None:
+            try:
+                score = target.evaluate(spec["score"])
+            except RuntimeError:
+                score = None  # Page still navigating.
+            if score is None:
+                time.sleep(2)
+        if score is None:
+            raise RuntimeError(
+                f"{name} produced no score in {timeout:.0f}s - the page "
+                "layout may have changed, check the selector"
+            )
+        target.close()
+        return float(score)
+    finally:
+        browser.close()
 
 
 def run_suite(binary: Path, names, runs: int, tabs: int, timeout: float) -> dict:
@@ -395,25 +416,38 @@ def run_suite(binary: Path, names, runs: int, tabs: int, timeout: float) -> dict
     results = {}
     for name in names:
         print(f"  {name}")
-        if name == "startup":
-            results[name] = ("ms", False, measure_startup(binary, runs))
-        elif name == "memory":
-            results[name] = ("MB", False, measure_memory(binary, runs, tabs))
-        else:
-            spec = WEB_BENCHMARKS[name]
-            results[name] = (spec["unit"], spec["higher_is_better"],
-                             measure_web(binary, name, runs, timeout))
+        # One suite falling over used to end the whole run. These take tens of
+        # minutes together, so losing the suites that already finished is the
+        # expensive part of a failure, not the one that failed.
+        try:
+            if name == "startup":
+                results[name] = ("ms", False, measure_startup(binary, runs))
+            elif name == "memory":
+                results[name] = ("MB", False, measure_memory(binary, runs, tabs))
+            else:
+                spec = WEB_BENCHMARKS[name]
+                results[name] = (spec["unit"], spec["higher_is_better"],
+                                 measure_web(binary, name, runs, timeout))
+        except (OSError, RuntimeError) as exc:
+            print(f"    failed: {type(exc).__name__}: {str(exc)[:90]}")
+            unit = WEB_BENCHMARKS.get(name, {}).get("unit", "")
+            results[name] = (unit, False, [])
     return results
 
 
 def report(mine: dict, theirs: dict) -> None:
     print("\n" + "=" * 64)
+    incomplete = []
     for name, (unit, higher_better, samples) in mine.items():
+        print(f"\n{name}  ({unit})")
+        if not samples:
+            print("  not measured")
+            incomplete.append(name)
+            continue
         median = statistics.median(samples)
         spread = f"{min(samples):.1f}-{max(samples):.1f}" if len(samples) > 1 else "-"
-        print(f"\n{name}  ({unit})")
         print(f"  this build {median:>10.1f}   range {spread}")
-        if name not in theirs:
+        if name not in theirs or not theirs[name][2]:
             continue
         other = statistics.median(theirs[name][2])
         print(f"  baseline   {other:>10.1f}")
@@ -427,6 +461,9 @@ def report(mine: dict, theirs: dict) -> None:
     if not theirs:
         print("\nNo baseline was measured, so none of this is a speedup yet."
               "\nRe-run with --compare <stock chrome.exe> before quoting it.")
+    if incomplete:
+        print(f"\nNot measured: {', '.join(incomplete)}. Everything else above"
+              "\nstands; re-run just those by naming them as arguments.")
     print()
 
 
