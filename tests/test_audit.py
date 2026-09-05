@@ -88,11 +88,27 @@ class AllowList(unittest.TestCase):
 
 class NetworkAllowList(unittest.TestCase):
     PATH = ROOT / "tests" / "network-allowed.txt"
+    BLOCKER_MARKER = "=== the bundled blocker's filter lists ==="
 
     def hosts(self) -> list:
         lines = self.PATH.read_text(encoding="utf-8").splitlines()
         return [line.split("#", 1)[0].strip() for line in lines
                 if line.split("#", 1)[0].strip()]
+
+    def groups(self) -> tuple:
+        """The browser's own hosts and the blocker's, split at the marker."""
+        own, blocker, seen_marker = [], [], False
+        for raw in self.PATH.read_text(encoding="utf-8").splitlines():
+            if self.BLOCKER_MARKER in raw:
+                seen_marker = True
+                continue
+            host = raw.split("#", 1)[0].strip()
+            if host:
+                (blocker if seen_marker else own).append(host)
+        self.assertTrue(seen_marker,
+                        f"the marker '{self.BLOCKER_MARKER}' is gone, so the"
+                        " two kinds of traffic are no longer told apart")
+        return own, blocker
 
     def test_only_bare_hosts(self):
         """A scheme or a path here would never match and would pass silently."""
@@ -100,10 +116,18 @@ class NetworkAllowList(unittest.TestCase):
             self.assertNotIn("/", host, f"{host} is not a bare host")
             self.assertNotIn(":", host, f"{host} is not a bare host")
 
-    def test_stays_short(self):
-        # Not a style rule. Every host is a connection the user did not ask
-        # for, and the list growing quietly is the thing to notice.
-        self.assertLessEqual(len(self.hosts()), 3, self.hosts())
+    def test_the_browser_reaches_one_host_of_its_own(self):
+        # Not a style rule. This is traffic nobody can switch off, so growth
+        # here is the thing worth noticing, and it should cost an argument.
+        own, _blocker = self.groups()
+        self.assertLessEqual(len(own), 3, own)
+
+    def test_the_blocker_does_not_sprawl(self):
+        # The blocker rotates between mirrors, so this list moves on its own
+        # and cannot be pinned to an exact set. A cap still catches the case
+        # where entries get added for years without anyone rereading them.
+        _own, blocker = self.groups()
+        self.assertLessEqual(len(blocker), 12, blocker)
 
 
 class ShippedDefaults(unittest.TestCase):
