@@ -2,6 +2,7 @@
 """Prove every shipped default actually reaches a new profile.
 
   python3 utils/check_defaults.py
+  python3 utils/check_defaults.py --as-installed --binary <installed exe>
 
 A misspelled pref path in defaults/initial_preferences is silent: the file
 still parses, the browser still starts, and the setting simply never applies.
@@ -14,6 +15,11 @@ first-run processing, so the file is never read and every key comes back
 missing. Nothing else here needs a window.
 
 Also does not pass --no-first-run, for the same reason.
+
+--as-installed reads the file the installer put beside the browser instead of
+copying ours in. Use it on a real install: staging a file into the installer
+archive does not mean setup ever places it, and the difference is invisible
+from the build tree.
 
 Exit code is 1 if any key is missing or arrived with a different value.
 """
