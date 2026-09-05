@@ -14,6 +14,10 @@ second binary and prints the difference.
 Results are medians. A browser start is noisy enough that a mean gets dragged
 around by one unlucky run, and the point of these figures is to survive
 someone re-running them.
+
+A full web suite against two binaries runs for hours, so progress is flushed
+as it happens. Redirected into a file, block buffering would otherwise hold
+every line until the end and make a working run look hung.
 """
 
 import argparse
@@ -29,6 +33,8 @@ from pathlib import Path
 import cdp
 import config
 
+sys.stdout.reconfigure(line_buffering=True)
+
 DEFAULT_BINARY = config.CHROMIUM_SRC / "out" / "baseline" / "chrome.exe"
 
 # First-run bubbles and the search picker would land in a paint timing. The
@@ -43,6 +49,10 @@ COMMON_FLAGS = [
     "--disable-renderer-backgrounding",
     "--disable-backgrounding-occluded-windows",
     "--disable-background-timer-throttling",
+    # Windows reports these windows as occluded, and an occluded window stops
+    # getting animation frames. Both web drivers await one before their first
+    # workload, so without this they sit at the start line until the timeout.
+    "--disable-features=CalculateNativeWinOcclusion",
 ]
 
 # Cache files stay mapped after the browser dies, so copying them fails with a
@@ -64,11 +74,17 @@ STARTUP_PAGE = """<!doctype html>
 # Selectors break when browserbench rewrites its markup. Each expression
 # returns a number when the run finishes and null while it is going, which is
 # the only signal the poll loop gets.
+#
+# Only Speedometer honours startAutomatically. The other two sit on their start
+# button forever, so each names the call its own button makes. Those run through
+# setTimeout because the driver blocks the main thread and a direct call never
+# returns an answer to the debugger.
 WEB_BENCHMARKS = {
     "speedometer": {
         "url": "https://browserbench.org/Speedometer3.1/?startAutomatically=true",
         "unit": "runs/min",
         "higher_is_better": True,
+        "start": None,
         "score": """
             (() => {
               const el = document.querySelector('#result-number, .result-number');
@@ -79,12 +95,20 @@ WEB_BENCHMARKS = {
         """,
     },
     "jetstream": {
-        "url": "https://browserbench.org/JetStream2.2/?startAutomatically=true",
+        "url": "https://browserbench.org/JetStream2.2/",
         "unit": "score",
         "higher_is_better": True,
+        "start": """
+            (() => {
+              if (typeof JetStream !== 'object') return false;
+              if (!document.querySelector('#status a')) return false;
+              setTimeout(() => JetStream.start(), 0);
+              return true;
+            })()
+        """,
         "score": """
             (() => {
-              const el = document.querySelector('#result-summary .score, .score');
+              const el = document.querySelector('#result-summary .score');
               if (!el) return null;
               const v = parseFloat(el.textContent);
               return Number.isFinite(v) ? v : null;
@@ -92,12 +116,21 @@ WEB_BENCHMARKS = {
         """,
     },
     "motionmark": {
-        "url": "https://browserbench.org/MotionMark1.3.1/?startAutomatically=true",
+        "url": "https://browserbench.org/MotionMark1.3.1/",
         "unit": "score",
         "higher_is_better": True,
+        "start": """
+            (() => {
+              if (typeof benchmarkController !== 'object') return false;
+              const b = document.getElementById('start-button');
+              if (!b || b.disabled) return false;
+              setTimeout(() => benchmarkController.startBenchmark(), 0);
+              return true;
+            })()
+        """,
         "score": """
             (() => {
-              const el = document.querySelector('#results .score, .score');
+              const el = document.querySelector('.score-container .score');
               if (!el) return null;
               const v = parseFloat(el.textContent);
               return Number.isFinite(v) ? v : null;
@@ -311,6 +344,20 @@ def measure_web(binary: Path, name: str, runs: int, timeout: float) -> list:
                                     [spec["url"]], timeout=120)
             try:
                 deadline = time.monotonic() + timeout
+                if spec["start"]:
+                    # MotionMark's button is in the static markup, so it says
+                    # nothing about whether the suites have loaded, and calling
+                    # its handler too early fails silently.
+                    time.sleep(8)
+                    while time.monotonic() < deadline:
+                        try:
+                            if target.evaluate(spec["start"]):
+                                break
+                        except RuntimeError:
+                            pass  # Driver script not evaluated yet.
+                        time.sleep(2)
+                    else:
+                        raise RuntimeError(f"{name} never became startable")
                 score = None
                 while time.monotonic() < deadline and score is None:
                     try:
