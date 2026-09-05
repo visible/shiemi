@@ -8,6 +8,7 @@ frames, server pings and close.
 import base64
 import json
 import os
+import select
 import socket
 import struct
 import time
@@ -105,6 +106,10 @@ class WebSocket:
                     continue
                 return message.decode("utf-8", "replace")
 
+    def ready(self, timeout: float) -> bool:
+        """Whether a frame is waiting, so recv can be called without blocking."""
+        return bool(select.select([self.sock], [], [], timeout)[0])
+
     def close(self) -> None:
         try:
             self.sock.sendall(bytes([0x80 | OP_CLOSE, 0x80]) + b"\x00\x00\x00\x00")
@@ -119,19 +124,39 @@ class Target:
     def __init__(self, ws_url: str, timeout: float = 30.0):
         self.ws = WebSocket(ws_url, timeout)
         self.next_id = 0
+        self.events = []
 
     def call(self, method: str, **params):
         self.next_id += 1
         mid = self.next_id
         self.ws.send(json.dumps({"id": mid, "method": method, "params": params}))
-        # Events share the socket with replies, so skip anything else.
+        # Events share the socket with replies. Keeping them rather than
+        # dropping them is what makes anything that happens during a call
+        # observable afterwards; a page load reports itself entirely in events.
         while True:
             message = json.loads(self.ws.recv())
             if message.get("id") != mid:
+                if "method" in message:
+                    self.events.append(message)
                 continue
             if "error" in message:
                 raise RuntimeError(f"{method}: {message['error'].get('message')}")
             return message.get("result", {})
+
+    def drain(self, seconds: float) -> None:
+        """Collect events for a while, so later calls do not have to."""
+        deadline = time.monotonic() + seconds
+        while time.monotonic() < deadline:
+            if not self.ws.ready(min(0.25, max(0.0, deadline - time.monotonic()))):
+                continue
+            message = json.loads(self.ws.recv())
+            if "method" in message:
+                self.events.append(message)
+
+    def seen(self, method: str) -> list:
+        """Parameters of every event of one kind collected so far."""
+        return [e.get("params", {}) for e in self.events
+                if e.get("method") == method]
 
     def evaluate(self, expression: str):
         """Run JavaScript in the page and return the value, or None."""
