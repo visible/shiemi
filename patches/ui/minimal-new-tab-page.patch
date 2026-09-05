@@ -1,9 +1,12 @@
 diff --git a/chrome/browser/resources/new_tab_page_third_party/new_tab_page_third_party.html b/chrome/browser/resources/new_tab_page_third_party/new_tab_page_third_party.html
-index 6332e7cd39fad..2a303346484fa 100644
+index 6332e7cd39fad..81412d506b5bd 100644
 --- a/chrome/browser/resources/new_tab_page_third_party/new_tab_page_third_party.html
 +++ b/chrome/browser/resources/new_tab_page_third_party/new_tab_page_third_party.html
-@@ -6,8 +6,11 @@
+@@ -4,10 +4,14 @@
+   <head>
+     <meta charset="utf-8">
      <title>$i18n{title}</title>
++    <link rel="icon" href="chrome://theme/current-channel-logo@2x">
      <style>
        html {
 -        --ntp-focus-shadow-color: rgba(var(--google-blue-600-rgb), .4);
@@ -16,7 +19,7 @@ index 6332e7cd39fad..2a303346484fa 100644
          background-attachment: fixed;
          background-color: $i18n{colorBackground};
          background-position: $i18n{backgroundPosition};
-@@ -16,11 +19,10 @@
+@@ -16,11 +20,10 @@
          overflow: auto;
        }
  
@@ -32,7 +35,7 @@ index 6332e7cd39fad..2a303346484fa 100644
        }
  
        html[has-custom-background] {
-@@ -37,10 +39,98 @@
+@@ -37,10 +40,98 @@
          margin: 0;
        }
  
@@ -131,7 +134,7 @@ index 6332e7cd39fad..2a303346484fa 100644
        }
  
        html[has-custom-background] cr-most-visited {
-@@ -50,7 +140,22 @@
+@@ -50,7 +141,22 @@
    </head>
    <body>
      <script type="module" src="strings.m.js"></script>
