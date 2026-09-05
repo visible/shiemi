@@ -93,6 +93,14 @@ def main() -> int:
     out_path = src / "out" / out_name
 
     if not args.skip_build:
+        # The archive copies into staging only where the destination is absent
+        # and nothing clears it, so anything already there survives forever.
+        # An interrupted build leaves a truncated file that is then never
+        # rewritten, and the installer it produces looks perfectly fine.
+        for staged in sorted(out_path.glob(STAGED_GLOB)):
+            print(f"staging clearing {staged.relative_to(out_path)}")
+            shutil.rmtree(staged, ignore_errors=True)
+
         cmd = [sys.executable, str(config.ROOT / "utils" / "build.py"),
                "--flags", args.flags, "--target", "mini_installer"]
         if args.out:
