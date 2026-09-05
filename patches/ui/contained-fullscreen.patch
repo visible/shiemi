@@ -11,23 +11,6 @@ index 09bec76bcb0bf..4e9a437ac4d7d 100644
    (*s_allowlist)[contextual_search::kDriveConsentState] =
        settings_api::PrefType::kNumber;
    (*s_allowlist)[::prefs::kShowForwardButton] =
-diff --git a/chrome/browser/resources/settings/appearance_page/appearance_page.html b/chrome/browser/resources/settings/appearance_page/appearance_page.html
-index b40d1a7199fa8..4690a145f45b3 100644
---- a/chrome/browser/resources/settings/appearance_page/appearance_page.html
-+++ b/chrome/browser/resources/settings/appearance_page/appearance_page.html
-@@ -240,6 +240,12 @@
-             on-change="onShowTabSearchButtonChange_">
-         </settings-toggle-button>
- 
-+        <settings-toggle-button class="hr" id="containedFullscreen"
-+            pref="{{prefs.shiemi.contained_fullscreen}}"
-+            label="$i18n{containedFullscreen}"
-+            sub-label="$i18n{containedFullscreenDesc}">
-+        </settings-toggle-button>
-+
-         <settings-toggle-button class="hr" id="showSavedTabGroups"
-             pref="{{prefs.bookmark_bar.show_tab_groups}}"
-             label="$i18n{showTabGroupsInBookmarksBar}"
 diff --git a/chrome/browser/ui/browser_ui_prefs.cc b/chrome/browser/ui/browser_ui_prefs.cc
 index aa327f72a8864..9ccbdfd87cdb4 100644
 --- a/chrome/browser/ui/browser_ui_prefs.cc
@@ -284,28 +267,6 @@ index f829637e45840..f7705b8ac81ab 100644
  
    const gfx::Size preferred_size =
        caption_button_container_->GetPreferredSize();
-diff --git a/chrome/browser/ui/webui/settings/settings_localized_strings_provider.cc b/chrome/browser/ui/webui/settings/settings_localized_strings_provider.cc
-index d21c249464c61..bec617bd6e16d 100644
---- a/chrome/browser/ui/webui/settings/settings_localized_strings_provider.cc
-+++ b/chrome/browser/ui/webui/settings/settings_localized_strings_provider.cc
-@@ -634,6 +634,17 @@ void AddAppearanceStrings(content::WebUIDataSource* html_source,
-   };
-   html_source->AddLocalizedStrings(kLocalizedStrings);
- 
-+  // Our own strings, not upstream's, so they are not in a .grd: settings_strings
-+  // is rewritten wholesale at build time to carry the product name, and a hunk
-+  // in there would be discarded by that step.
-+  html_source->AddString("containedFullscreen",
-+                         u"Full screen stays inside the window");
-+  html_source->AddString(
-+      "containedFullscreenDesc",
-+      u"A video going full screen fills this window instead of the whole "
-+      u"display, so the rest of your desktop stays where it is. Shift-click a "
-+      u"player's full screen button for the other one.");
-+
-   html_source->AddBoolean("ntpSimplificationBookmarksBarEnabled",
-                           base::FeatureList::IsEnabled(
-                               ntp_features::kNtpSimplificationBookmarkBar));
 diff --git a/chrome/common/pref_names.h b/chrome/common/pref_names.h
 index 7f2ccebd7e501..ac6146716fe06 100644
 --- a/chrome/common/pref_names.h

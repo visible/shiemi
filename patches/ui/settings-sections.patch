@@ -1,0 +1,297 @@
+diff --git a/chrome/browser/resources/settings/BUILD.gn b/chrome/browser/resources/settings/BUILD.gn
+index 098043d5079c4..194683ebf3ace 100644
+--- a/chrome/browser/resources/settings/BUILD.gn
++++ b/chrome/browser/resources/settings/BUILD.gn
+@@ -188,6 +188,7 @@ build_webui("build") {
+     "settings_menu/settings_menu.ts",
+     "settings_page/settings_section.ts",
+     "settings_ui/settings_ui.ts",
++    "shiemi_page/shiemi_page.ts",
+     "simple_confirmation_dialog.ts",
+     "site_favicon.ts",
+     "site_settings/add_site_dialog.ts",
+diff --git a/chrome/browser/resources/settings/page_visibility.ts b/chrome/browser/resources/settings/page_visibility.ts
+index feff9bdf64552..d0baac4e3040e 100644
+--- a/chrome/browser/resources/settings/page_visibility.ts
++++ b/chrome/browser/resources/settings/page_visibility.ts
+@@ -44,7 +44,51 @@ export interface PrivacyPageVisibility {
+ 
+ function createPageVisibility(): PageVisibility|undefined {
+   if (!loadTimeData.getBoolean('isGuest')) {
+-    return undefined;
++    // "You and Google" is sign-in, sync and Google services; "AI innovations"
++    // is Gemini and friends; Safety Hub runs its checks against Google
++    // endpoints. None of them do anything in a browser that never signs in,
++    // and leaving them in advertises services this build does not use.
++    //
++    // Hiding drops the routes with the sections, so the components behind
++    // them are never instantiated. Guest mode already ships with these three
++    // switched off, so the resulting configuration is one upstream tests.
++    //
++    // Importing bookmarks lives under "You and Google" but is also in the app
++    // menu, under Bookmarks and lists, so it survives.
++    //
++    // Every key has to be listed. The menu binds hidden="[[!visibility.x]]",
++    // so once this returns an object at all, anything left out reads as
++    // undefined and the section disappears. appearance and privacy take their
++    // nested form rather than true for the same reason: their pages read the
++    // sub-keys off whatever is here.
++    return {
++      a11y: true,
++      ai: false,
++      appearance: {
++        bookmarksBar: true,
++        homeButton: true,
++        hoverCard: true,
++        pageZoom: true,
++        setTheme: true,
++        sidePanel: true,
++      },
++      autofill: true,
++      defaultBrowser: true,
++      downloads: true,
++      extensions: true,
++      languages: true,
++      onStartup: true,
++      people: false,
++      performance: true,
++      privacy: {
++        networkPrediction: true,
++        searchPrediction: true,
++      },
++      reset: true,
++      safetyHub: false,
++      system: true,
++      yourSavedInfo: true,
++    };
+   }
+ 
+   // <if expr="not is_chromeos">
+diff --git a/chrome/browser/resources/settings/privacy_page/privacy_page_index.ts b/chrome/browser/resources/settings/privacy_page/privacy_page_index.ts
+index 30e6533823b2a..d1dd02b2b4569 100644
+--- a/chrome/browser/resources/settings/privacy_page/privacy_page_index.ts
++++ b/chrome/browser/resources/settings/privacy_page/privacy_page_index.ts
+@@ -30,11 +30,7 @@ import type {PrivacyGuideBrowserProxy} from './privacy_guide/privacy_guide_brows
+ import {MAX_PRIVACY_GUIDE_PROMO_IMPRESSION, PrivacyGuideBrowserProxyImpl} from './privacy_guide/privacy_guide_browser_proxy.js';
+ import {getTemplate} from './privacy_page_index.html.js';
+ 
+-// clang-format off
+-// <if expr="is_chromeos">
+ import {getTopLevelRoute} from '../route.js';
+-// </if>
+-// clang-format on
+ 
+ 
+ export interface SettingsPrivacyPageIndexElement {
+@@ -261,13 +257,12 @@ export class SettingsPrivacyPageIndexElement extends
+       case routes.PRIVACY:
+         return this.getDefaultViews_();
+       case routes.BASIC:
+-        // <if expr="is_chromeos">
++        // Reached whenever the top level route is Privacy, which upstream only
++        // arranges for CrOS guest mode but is now the desktop default too: the
++        // people section is hidden, so getTopLevelRoute cannot return it.
+         if (getTopLevelRoute() === routes.PRIVACY) {
+-          // On CrOS guest mode the "Privacy" section should be displayed when
+-          // on chrome://settings/.
+           return this.getDefaultViews_();
+         }
+-        // </if>
+ 
+         // Display the default views if in search mode, since they could be part
+         // of search results.
+@@ -356,14 +351,10 @@ export class SettingsPrivacyPageIndexElement extends
+   }
+ 
+   private renderPrivacyView_(): boolean {
+-    // <if expr="is_chromeos">
+     if (getTopLevelRoute() === routes.PRIVACY &&
+         this.currentRoute === routes.BASIC) {
+-      // On CrOS guest mode the "Privacy" section should be displayed when
+-      // on chrome://settings/.
+       return true;
+     }
+-    // </if>
+ 
+     return this.inSearchMode ||
+         (!!this.currentRoute &&
+diff --git a/chrome/browser/resources/settings/route.ts b/chrome/browser/resources/settings/route.ts
+index 7770eeb7d2406..93493642b16f8 100644
+--- a/chrome/browser/resources/settings/route.ts
++++ b/chrome/browser/resources/settings/route.ts
+@@ -332,6 +332,11 @@ function createRoutes(): SettingsRoutes {
+         loadTimeData.getString('performancePageTitle'));
+   }
+ 
++  // Unconditional: this section holds our own options and there is no
++  // visibility flag that should ever take it away.
++  r.SHIEMI = r.BASIC.createSection(
++      '/shiemi', 'shiemi', loadTimeData.getString('shiemiPageTitle'));
++
+   return r as unknown as SettingsRoutes;
+ }
+ 
+@@ -365,7 +370,10 @@ export let routes: SettingsRoutes = Router.getInstance().getRoutes();
+ // Returns the "effective" route when at chrome://settings/.
+ export function getTopLevelRoute(): Route {
+   if (!loadTimeData.getBoolean('isGuest')) {
+-    return routes.PEOPLE;
++    // Was routes.PEOPLE, which createRoutes no longer builds because the
++    // people section is hidden. Undefined here leaves chrome://settings/ with
++    // an empty content pane and no error anywhere the user can see.
++    return routes.PRIVACY;
+   }
+ 
+   let guestTopLevelRoute = routes.SEARCH;
+diff --git a/chrome/browser/resources/settings/router.ts b/chrome/browser/resources/settings/router.ts
+index 0b202d9469f45..bdac90f31ff76 100644
+--- a/chrome/browser/resources/settings/router.ts
++++ b/chrome/browser/resources/settings/router.ts
+@@ -59,6 +59,7 @@ export interface SettingsRoutes {
+   SEARCH_ENGINES: Route;
+   SECURITY: Route;
+   SECURITY_KEYS: Route;
++  SHIEMI: Route;
+   SITE_SETTINGS: Route;
+   SITE_SETTINGS_ADS: Route;
+   SITE_SETTINGS_ALL: Route;
+diff --git a/chrome/browser/resources/settings/settings_main/settings_main.html b/chrome/browser/resources/settings/settings_main/settings_main.html
+index 97b3fd59894dd..7aab83d1688b2 100644
+--- a/chrome/browser/resources/settings/settings_main/settings_main.html
++++ b/chrome/browser/resources/settings/settings_main/settings_main.html
+@@ -221,6 +221,13 @@
+     </div>
+   </template>
+ 
++  <div slot="view" id="shiemi">
++    <template is="dom-if" if="[[renderPlugin_(
++        routes_.SHIEMI, lastRoute_, inSearchMode_)]]">
++      <settings-shiemi-page prefs="{{prefs}}"></settings-shiemi-page>
++    </template>
++  </div>
++
+   <div slot="view" id="about">
+     <template is="dom-if" if="[[renderPlugin_(
+         routes_.ABOUT, lastRoute_, inSearchMode_)]]">
+diff --git a/chrome/browser/resources/settings/settings_main/settings_main.ts b/chrome/browser/resources/settings/settings_main/settings_main.ts
+index 7ff1c061b5a6b..690f7825facce 100644
+--- a/chrome/browser/resources/settings/settings_main/settings_main.ts
++++ b/chrome/browser/resources/settings/settings_main/settings_main.ts
+@@ -20,6 +20,7 @@ import '../performance_page/performance_page_index.js';
+ import '../privacy_page/privacy_page_index.js';
+ import '../reset_page/reset_profile_banner.js';
+ import '../search_page/search_page_index.js';
++import '../shiemi_page/shiemi_page.js';
+ import '../your_saved_info_page/your_saved_info_page_index.js';
+ // <if expr="not is_chromeos">
+ import '../default_browser_page/default_browser_page.js';
+diff --git a/chrome/browser/resources/settings/settings_menu/settings_menu.html b/chrome/browser/resources/settings/settings_menu/settings_menu.html
+index a635753b6ce48..40622266d6dac 100644
+--- a/chrome/browser/resources/settings/settings_menu/settings_menu.html
++++ b/chrome/browser/resources/settings/settings_menu/settings_menu.html
+@@ -117,6 +117,12 @@
+           $i18n{onStartup}
+           <cr-ripple></cr-ripple>
+         </a>
++        <a role="menuitem" id="shiemi" href="/shiemi"
++            class="cr-nav-menu-item">
++          <cr-icon icon="cr:chrome-product"></cr-icon>
++          $i18n{shiemiPageTitle}
++          <cr-ripple></cr-ripple>
++        </a>
+         <div class="menu-separator"></div>
+         <a role="menuitem" id="languages" href="/languages"
+             class="cr-nav-menu-item"
+diff --git a/chrome/browser/resources/settings/shiemi_page/shiemi_page.html b/chrome/browser/resources/settings/shiemi_page/shiemi_page.html
+new file mode 100644
+index 0000000000000..7bd405dc03c32
+--- /dev/null
++++ b/chrome/browser/resources/settings/shiemi_page/shiemi_page.html
+@@ -0,0 +1,9 @@
++  <style include="settings-shared"></style>
++  <settings-section page-title="$i18n{shiemiPageTitle}"
++      class="cr-centered-card-container">
++    <settings-toggle-button id="containedFullscreen"
++        pref="{{prefs.shiemi.contained_fullscreen}}"
++        label="$i18n{containedFullscreen}"
++        sub-label="$i18n{containedFullscreenDesc}">
++    </settings-toggle-button>
++  </settings-section>
+diff --git a/chrome/browser/resources/settings/shiemi_page/shiemi_page.ts b/chrome/browser/resources/settings/shiemi_page/shiemi_page.ts
+new file mode 100644
+index 0000000000000..e7266e06edded
+--- /dev/null
++++ b/chrome/browser/resources/settings/shiemi_page/shiemi_page.ts
+@@ -0,0 +1,49 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++/**
++ * @fileoverview
++ * 'settings-shiemi-page' holds the options that belong to this browser rather
++ * than to upstream, so they are not scattered through pages built for
++ * something else.
++ */
++import '../controls/settings_toggle_button.js';
++import '../settings_page/settings_section.js';
++import '../settings_shared.css.js';
++
++import {PrefsMixin} from '/shared/settings/prefs/prefs_mixin.js';
++import {PolymerElement} from 'chrome://resources/polymer/v3_0/polymer/polymer_bundled.min.js';
++
++import {getSearchManager} from '../search_settings.js';
++import type {SettingsPlugin} from '../settings_main/settings_plugin.js';
++
++import {getTemplate} from './shiemi_page.html.js';
++
++const SettingsShiemiPageElementBase = PrefsMixin(PolymerElement);
++
++export class SettingsShiemiPageElement extends SettingsShiemiPageElementBase
++    implements SettingsPlugin {
++  static get is() {
++    return 'settings-shiemi-page';
++  }
++
++  static get template() {
++    return getTemplate();
++  }
++
++  // SettingsPlugin implementation. Not optional: settings-main calls this on
++  // every element it hosts, whether or not the page has anything to search.
++  async searchContents(query: string) {
++    const searchRequest = await getSearchManager().search(query, this);
++    return searchRequest.getSearchResult();
++  }
++}
++
++declare global {
++  interface HTMLElementTagNameMap {
++    'settings-shiemi-page': SettingsShiemiPageElement;
++  }
++}
++
++customElements.define(SettingsShiemiPageElement.is, SettingsShiemiPageElement);
+diff --git a/chrome/browser/ui/webui/settings/settings_localized_strings_provider.cc b/chrome/browser/ui/webui/settings/settings_localized_strings_provider.cc
+index d21c249464c61..a2185d70f2555 100644
+--- a/chrome/browser/ui/webui/settings/settings_localized_strings_provider.cc
++++ b/chrome/browser/ui/webui/settings/settings_localized_strings_provider.cc
+@@ -634,6 +634,18 @@ void AddAppearanceStrings(content::WebUIDataSource* html_source,
+   };
+   html_source->AddLocalizedStrings(kLocalizedStrings);
+ 
++  // Our own strings, not upstream's, so they are not in a .grd: settings_strings
++  // is rewritten wholesale at build time to carry the product name, and a hunk
++  // in there would be discarded by that step.
++  html_source->AddString("shiemiPageTitle", u"Shiemi");
++  html_source->AddString("containedFullscreen",
++                         u"Full screen stays inside the window");
++  html_source->AddString(
++      "containedFullscreenDesc",
++      u"A video going full screen fills this window instead of the whole "
++      u"display, so the rest of your desktop stays where it is. Shift-click a "
++      u"player's full screen button for the other one.");
++
+   html_source->AddBoolean("ntpSimplificationBookmarksBarEnabled",
+                           base::FeatureList::IsEnabled(
+                               ntp_features::kNtpSimplificationBookmarkBar));
