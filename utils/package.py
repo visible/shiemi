@@ -32,6 +32,7 @@ import subprocess
 import sys
 
 import config
+import fetch_ublock
 
 INSTALLER = "mini_installer.exe"
 DEFAULTS = "initial_preferences"
@@ -69,6 +70,42 @@ def check_defaults(out_path) -> None:
             f"delete {staged.parent} and build again."
         )
     print(f"defaults {DEFAULTS} staged and current")
+
+    check_blocker(staged_dirs[0])
+
+
+def check_blocker(staged_dir) -> None:
+    """Fail unless the bundled blocker is staged for the version directory.
+
+    Same failure as the defaults above and just as quiet: the browser installs
+    and runs perfectly with no blocker in it, and the only visible difference
+    is ads. Upstream's Extensions\\*.* line does the carrying, so what can go
+    wrong is the files not being in the build directory when the archive runs.
+    """
+    source = config.ROOT / ".cache" / fetch_ublock.DEFAULT_CACHE.name
+    version_dirs = [p for p in staged_dir.iterdir()
+                    if p.is_dir() and p.name[0].isdigit()]
+    if not version_dirs:
+        raise SystemExit(f"no version directory staged under {staged_dir}")
+
+    staged = version_dirs[0] / "Extensions" / fetch_ublock.CRX_NAME
+    declaration = staged.parent / fetch_ublock.JSON_NAME
+    for path in (staged, declaration):
+        if not path.is_file():
+            raise SystemExit(
+                f"the bundled blocker is not in the installer archive"
+                f" ({path}).\n"
+                "Both the crx and its json have to be in the build directory's"
+                " Extensions folder before the archive runs; utils/build.py"
+                " puts them there."
+            )
+
+    if source.is_file() and staged.read_bytes() != source.read_bytes():
+        raise SystemExit(f"staged {fetch_ublock.CRX_NAME} is not the pinned"
+                         " release; clear the staging directory and rebuild")
+
+    print(f"blocker  uBlock Origin {fetch_ublock.VERSION} staged for the"
+          " version directory")
 
 
 def digest(path) -> str:

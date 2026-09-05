@@ -80,6 +80,21 @@ def free_port() -> int:
         return s.getsockname()[1]
 
 
+def shipped_crx(binary: Path):
+    """Where the crx sits for this binary, or None.
+
+    The browser reads DIR_MODULE/extensions, and DIR_MODULE is the directory
+    holding chrome.dll: the output directory in a build tree, the version
+    directory in an install. Both are checked so this gate runs against either
+    without being told which.
+    """
+    candidates = [binary.parent / "Extensions" / fetch_ublock.CRX_NAME]
+    candidates += [child / "Extensions" / fetch_ublock.CRX_NAME
+                   for child in sorted(binary.parent.iterdir())
+                   if child.is_dir() and child.name[0].isdigit()]
+    return next((path for path in candidates if path.is_file()), None)
+
+
 def verdict(page, url: str) -> str:
     """How a request for url ended: blocked, stubbed, or the response it got.
 
@@ -174,11 +189,12 @@ def main() -> int:
     if not args.binary.exists():
         raise SystemExit(f"no browser at {args.binary} - build it first")
 
-    staged = args.binary.parent / "Extensions" / fetch_ublock.CRX_NAME
-    if not staged.exists():
+    staged = shipped_crx(args.binary)
+    if not staged:
         raise SystemExit(
-            f"no blocker beside the browser: {staged} is missing.\n"
+            f"no blocker anywhere near {args.binary}.\n"
             "Nothing would install it, so this build ships without one.")
+    print(f"  shipped at        {staged.parent}")
 
     server, http_port = serve()
     devtools_port = free_port()
