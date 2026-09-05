@@ -24,3 +24,41 @@
 # Verified with utils/audit_components.py that nothing else is registered, so
 # this check speaks for security components only.
 update.googleapis.com
+
+# Filter lists for the bundled content blocker, below. This is the cost of
+# shipping one, and it is the largest entry in this file, so the argument
+# matters.
+#
+# A blocker whose lists never update stops working within weeks, quietly,
+# while still showing a badge count. So this traffic is not optional the way
+# the check above nearly is. What each request is: a plain GET of a text file
+# over HTTPS, no cookies, no identity, and nothing about what was browsed.
+# They go to the list publishers, never to us, and they stop entirely if the
+# user removes the blocker, which they can.
+#
+# The set is not ours to choose and not fixed by our pin. The blocker fetches
+# its own manifest of mirrors at runtime, from the first host below, so which
+# mirror serves a given list can change without anything here changing. A new
+# uBlock Origin mirror turning up in an audit is that, not a leak: check it
+# resolves to the project, add it, move on. Anything else appearing is worth
+# treating as a real finding.
+#
+# The blocker's own lists, served from three interchangeable mirrors.
+ublockorigin.pages.dev
+ublockorigin.github.io
+cdn.jsdelivr.net
+
+# Two lists the blocker enables by default that are not its own. Peter Lowe's
+# ad and tracking server list, and the URLhaus malware domain list, which its
+# publisher mirrors across all three of these and rotates between them: three
+# consecutive audits picked a different one each time.
+pgl.yoyo.org
+curbengh.github.io
+malware-filter.pages.dev
+malware-filter.gitlab.io
+
+# The Public Suffix List, which the blocker needs to tell a site apart from a
+# third party. "co.uk" is not a registrable domain and no algorithm can know
+# that, so the list is the only way, and being wrong about it means filtering
+# the wrong requests.
+publicsuffix.org
