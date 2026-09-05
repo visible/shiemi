@@ -15,6 +15,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "utils"))
 
+import build
 import check_patches
 import config
 
@@ -62,6 +63,38 @@ class SharedFiles(unittest.TestCase):
             check_patches.check_shared_files(
                 owners, entry, path.read_text(encoding="utf-8"), problems)
         self.assertEqual(problems, [])
+
+
+class BrandingCollision(unittest.TestCase):
+    """build.py copies art over the tree, so a patch there is discarded."""
+
+    def test_a_patched_branding_file_is_reported(self):
+        owned = next(iter(build.branded_paths()))
+        problems: list[str] = []
+        check_patches.check_branding_collision(
+            "a.patch", diff_for(owned), problems)
+        self.assertEqual(len(problems), 1)
+        self.assertIn("overwrites", problems[0])
+
+    def test_an_ordinary_source_file_is_fine(self):
+        problems: list[str] = []
+        check_patches.check_branding_collision(
+            "a.patch", diff_for("chrome/browser/ui/thing.cc"), problems)
+        self.assertEqual(problems, [])
+
+    def test_the_real_series_touches_none_of_them(self):
+        problems: list[str] = []
+        for entry in config.read_series():
+            text = (config.PATCHES_DIR / entry).read_text(encoding="utf-8")
+            check_patches.check_branding_collision(entry, text, problems)
+        self.assertEqual(problems, [])
+
+    def test_the_overlay_covers_the_icons_in_the_repo(self):
+        """An empty mapping would make the check silently vacuous."""
+        owned = build.branded_paths()
+        self.assertTrue(owned)
+        self.assertTrue(any(p.endswith(".ico") for p in owned))
+        self.assertTrue(any(p.endswith(".icon") for p in owned))
 
 
 class Series(unittest.TestCase):

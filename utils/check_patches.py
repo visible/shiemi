@@ -12,6 +12,7 @@ the body after a hand edit.
 import re
 import sys
 
+import build
 import config
 import rebrand
 
@@ -115,6 +116,22 @@ def check_rebrand_collision(entry: str, text: str, problems: list[str]) -> None:
             )
 
 
+def check_branding_collision(entry: str, text: str, problems: list[str]) -> None:
+    """No patch may touch a file build.py overwrites with our branding art.
+
+    The overlay is a straight file copy, so it discards the patch without
+    saying anything, and the build then ships upstream's art.
+    """
+    branded = build.branded_paths()
+    for raw in TOUCHES.findall(text):
+        path = raw.strip()
+        if path in branded:
+            problems.append(
+                f"{entry}: patches {path}, which build.py overwrites from"
+                f" {branded[path].relative_to(config.ROOT).as_posix()}"
+            )
+
+
 def check_shared_files(owners: dict[str, str], entry: str, text: str,
                        problems: list[str]) -> None:
     """Each Chromium file belongs to exactly one patch.
@@ -148,6 +165,7 @@ def main() -> int:
         check_endings(entry, raw, problems)
         check_hunks(entry, text, problems)
         check_rebrand_collision(entry, text, problems)
+        check_branding_collision(entry, text, problems)
         check_shared_files(owners, entry, text, problems)
 
     if problems:
