@@ -11,9 +11,11 @@
   content blockers still work.
 
   a cold profile, sitting idle, opens
-  one connection: the update check for
-  certificate revocation data, and
-  downloads 5 mb of security data.
+  one connection: the component update
+  check. it pulls 5 mb — revoked
+  certificates, certificate transparency
+  logs, a password-strength wordlist,
+  hyphenation dictionaries.
   before the trim it was 346 mb.
 
 > faster?
