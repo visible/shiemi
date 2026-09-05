@@ -140,6 +140,11 @@ def install_defaults(out_dir) -> bool:
 
     Chromium looks for it in the executable's own directory, so a dev build
     only picks up the shipped defaults if it is copied out here too.
+
+    Must run before the build, not after: the installer archive picks the file
+    up out of this directory, and create_installer_archive.py skips anything
+    it cannot find without failing, so a late copy ships an installer with no
+    defaults in it and says nothing.
     """
     source = config.ROOT / "defaults" / "initial_preferences"
     if not source.is_file() or not out_dir.is_dir():
@@ -194,6 +199,9 @@ def main() -> int:
     out_path.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(flags_file, out_path / "args.gn")
 
+    if install_defaults(out_path):
+        print("defaults initial_preferences copied beside the binary")
+
     rc = run(f"gn gen {out_dir}", src)
     if rc != 0:
         return rc
@@ -208,9 +216,6 @@ def main() -> int:
         print(f"jobs     {args.jobs} of {cores} core(s), below normal priority")
         rc = run(f"autoninja -C {out_dir} -j {args.jobs} {args.target}", src,
                  yield_cpu=True)
-
-    if rc == 0 and install_defaults(out_path):
-        print("defaults initial_preferences copied beside the binary")
     return rc
 
 

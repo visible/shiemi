@@ -9,6 +9,9 @@ __pycache__/
 
 # Profile that launch.py builds for hand testing.
 .profile/
+
+# Installers package.py produces. They belong on a release, not in git.
+dist/
 .env*
 node_modules/
 .next/
