@@ -36,17 +36,24 @@
   python3 utils/audit_network.py --baseline
   python3 utils/audit_components.py --baseline
   python3 utils/check_defaults.py
+  python3 utils/check_search_default.py
   python3 utils/bench.py --compare <binary>
 
   the first fails if the browser reaches
   a host it has no business reaching.
-  the second fails if it downloads
-  anything that isn't security data.
+  the second fails if it downloads a
+  component that isn't on the list.
   the third reads every shipped default
   back out of a fresh profile, because a
   misspelled pref is silent. the fourth
-  re-runs the numbers above against any
-  binary you point it at.
+  checks the search engine survives in
+  regions whose engine list is short.
+  the last re-runs the numbers above
+  against any binary you point it at.
+
+  pass --as-installed to the third and
+  it reads the defaults an installer put
+  on disk, instead of the build tree's.
 
 > status?
 
