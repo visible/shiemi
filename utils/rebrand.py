@@ -116,13 +116,23 @@ def owns(relative: str) -> bool:
 
 
 def resolve(src: Path) -> list[str]:
+    """Expand TARGETS against the tree, refusing to match nothing.
+
+    A pattern that stops matching after a rebase would leave those strings
+    saying Chrome, and the build would say nothing about it.
+    """
     paths = []
     for pattern in TARGETS:
         if "*" in pattern:
-            paths += sorted(p.relative_to(src).as_posix()
-                            for p in src.glob(pattern))
-        elif (src / pattern).exists():
+            found = sorted(p.relative_to(src).as_posix()
+                           for p in src.glob(pattern))
+            if not found:
+                raise SystemExit(f"rebrand: {pattern} matches nothing in {src}")
+            paths += found
+        elif (src / pattern).is_file():
             paths.append(pattern)
+        else:
+            raise SystemExit(f"rebrand: {pattern} is not in {src}")
     return paths
 
 

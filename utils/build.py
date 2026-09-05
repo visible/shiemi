@@ -87,14 +87,25 @@ def overlay_branding(src) -> int:
     touching a resource costs a relink.
     """
     written = 0
+    missing = []
     for relative, source in branded_paths().items():
         dest = src.joinpath(*relative.split("/"))
         if not dest.parent.is_dir():
+            missing.append(relative)
             continue
         if dest.exists() and dest.read_bytes() == source.read_bytes():
             continue
         shutil.copyfile(source, dest)
         written += 1
+
+    # Skipping quietly would ship upstream's art, which is the kind of thing
+    # nobody notices until a screenshot. A rebase is when it would happen.
+    if missing:
+        raise SystemExit(
+            "branding: no directory in the tree for:\n  "
+            + "\n  ".join(missing)
+            + "\nUpstream moved these. Update branding/ to match."
+        )
     return written
 
 
@@ -125,9 +136,16 @@ def append_styles(src) -> int:
     written = 0
     for name, relative in STYLE_OVERLAYS.items():
         source = styles / name
-        dest = src.joinpath(*relative.split("/"))
-        if not source.is_file() or not dest.is_file():
+        if not source.is_file():
             continue
+        dest = src.joinpath(*relative.split("/"))
+        # Losing one of these silently costs the whole WebUI palette, and the
+        # browser still builds and runs, in upstream's blue.
+        if not dest.is_file():
+            raise SystemExit(
+                f"styles: {relative} is not in the tree, so {name} would not"
+                f" be applied. Upstream moved it; find the new path."
+            )
 
         current = dest.read_text(encoding="utf-8")
         start = current.find(STYLE_BEGIN)

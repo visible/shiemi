@@ -9,7 +9,9 @@ interesting cases are the ones that must not move: a string naming a separate
 Google product is stating a fact, and rewriting it makes the browser lie.
 """
 
+import shutil
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -111,6 +113,36 @@ class Rewrite(unittest.TestCase):
         before = self.tmp.stat().st_mtime_ns
         self.assertEqual(rebrand.rewrite(self.tmp), 0)
         self.assertEqual(self.tmp.stat().st_mtime_ns, before)
+
+
+class Resolve(unittest.TestCase):
+    """A pattern that matches nothing must stop the build, not the strings."""
+
+    def tree(self, *relative: str) -> Path:
+        root = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, root, True)
+        for name in relative:
+            path = root / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text("<message>Chrome</message>", encoding="utf-8")
+        return root
+
+    def test_a_complete_tree_resolves(self):
+        root = self.tree(*[p for p in rebrand.TARGETS if "*" not in p],
+                         "components/one_strings.grdp")
+        self.assertEqual(len(rebrand.resolve(root)), len(rebrand.TARGETS))
+
+    def test_a_missing_literal_target_raises(self):
+        root = self.tree("components/one_strings.grdp")
+        with self.assertRaises(SystemExit) as caught:
+            rebrand.resolve(root)
+        self.assertIn("not in", str(caught.exception))
+
+    def test_a_glob_matching_nothing_raises(self):
+        root = self.tree(*[p for p in rebrand.TARGETS if "*" not in p])
+        with self.assertRaises(SystemExit) as caught:
+            rebrand.resolve(root)
+        self.assertIn("matches nothing", str(caught.exception))
 
 
 class Ownership(unittest.TestCase):
