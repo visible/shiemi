@@ -46,14 +46,26 @@ CHROME = re.compile(
 MESSAGE = re.compile(r"(<message\b[^>]*>)(.*?)(</message>)", re.DOTALL)
 NAME = re.compile(r'\bname="([^"]+)"')
 
-# Messages whose body is replaced outright, because the rules above cannot
-# reach them: KEEP protects "Chromium Authors" as attribution, which is right
-# for the copyright line and wrong for this one. It is the Windows installer's
-# Publisher field, the shortcut publisher and the company name on the About
-# page, so leaving it had Add/Remove Programs crediting someone else for a
-# browser called Shiemi. The copyright message beside it is untouched, and
-# provenance stays in LICENSE and CREDITS.
-REPLACE_WHOLE = ("IDS_ABOUT_VERSION_COMPANY_NAME",)
+# Messages whose body is replaced outright, because renaming the product
+# inside them is not enough.
+#
+# The company name feeds the Windows installer's Publisher field, the shortcut
+# publisher and the About page. KEEP protects "Chromium Authors" as
+# attribution, which is right for the copyright line sitting next to it and
+# wrong here, so Add/Remove Programs credited someone else for a browser called
+# Shiemi. The copyright message is untouched, and provenance stays in LICENSE
+# and CREDITS.
+#
+# The description is what Windows shows under Default apps. Upstream's copy
+# advertises built-in malware and phishing protection, which is Safe Browsing,
+# which we ship off. Renaming it left us making a claim about ourselves that is
+# not true.
+REPLACE_WHOLE = {
+    "IDS_ABOUT_VERSION_COMPANY_NAME": PRODUCT,
+    "IDS_PRODUCT_DESCRIPTION":
+        f"{PRODUCT} is a fast, minimal web browser that keeps your browsing"
+        " to yourself.",
+}
 BODY = re.compile(r"^(\s*)(.*?)(\s*)$", re.DOTALL)
 
 # google_chrome_strings.grd is never compiled in an unbranded build, and
@@ -86,12 +98,12 @@ def rewrite(path: Path, product: str = PRODUCT) -> int:
         head, body, tail = match.groups()
         name = NAME.search(head)
         if name and name.group(1) in REPLACE_WHOLE:
-            # Keep the surrounding whitespace: grit is indentation-sensitive
-            # about nothing, but the diff should stay readable.
+            wanted = REPLACE_WHOLE[name.group(1)].replace(PRODUCT, product)
+            # Keep the surrounding whitespace so the diff stays readable.
             lead, text, trail = BODY.match(body).groups()
-            if text != product:
+            if text != wanted:
                 changed += 1
-            return f"{head}{lead}{product}{trail}{tail}"
+            return f"{head}{lead}{wanted}{trail}{tail}"
         if "Chromium" not in body and "Chrome" not in body:
             return match.group(0)
         rebranded = "".join(

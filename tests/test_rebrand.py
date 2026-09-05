@@ -153,6 +153,20 @@ class WholeBodyReplacement(unittest.TestCase):
         once = self.rewrite(self.GRD)
         self.assertEqual(self.rewrite(once), once)
 
+    def test_the_description_loses_the_safe_browsing_claim(self):
+        out = self.rewrite(
+            '<message name="IDS_PRODUCT_DESCRIPTION" desc="Browser">\n'
+            "  Chromium is a web browser. Browse the web more safely with"
+            " malware and phishing protection built into Chromium.\n"
+            "</message>\n")
+        self.assertNotIn("phishing", out)
+        self.assertNotIn("malware", out)
+        self.assertIn(rebrand.PRODUCT, out)
+
+    def test_every_replacement_names_the_product(self):
+        for name, text in rebrand.REPLACE_WHOLE.items():
+            self.assertIn(rebrand.PRODUCT, text, name)
+
 
 class Resolve(unittest.TestCase):
     """A pattern that matches nothing must stop the build, not the strings."""
