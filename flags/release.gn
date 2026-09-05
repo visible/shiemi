@@ -46,6 +46,22 @@ disable_fieldtrial_testing_config = true
 # same traffic, so that is the route to take. Nothing is lost by it: protection
 # that cannot authenticate was never protection.
 
+# Network Error Logging and the Reporting API let a site name a collector and
+# then receive beacons about its requests out of band, after the page is gone.
+# Nothing in the browser needs them, so they come out at build time instead of
+# being left compiled in behind a pref.
+enable_reporting = false
+
+# The remote desktop host. Nothing drives it and it is not reachable from the
+# UI, so it is dead code that only widens the binary.
+enable_remoting = false
+
+# Deliberately not set: google_api_key, google_default_client_id,
+# google_default_client_secret and use_official_google_api_keys are already
+# empty or false by default here, the environment is never consulted, and
+# runtime override is iOS and Fuchsia only. Stating them would read like it
+# changes something.
+
 use_remoteexec = false
 treat_warnings_as_errors = false
 
@@ -92,6 +108,20 @@ treat_warnings_as_errors = false
 # account, fetch a variations seed or pull a component runs here. That is a
 # product difference rather than a compiler one, which is why it survives
 # against a baseline that is optimised the same way we are.
+#
+# On the web suites, three runs each, medians:
+#
+#   speedometer   47.6 vs 46.2 runs/min   +3%
+#   jetstream    555.2 vs 494.6           +12%
+#
+# Read those as the machine being left alone rather than the engine being
+# quicker: it is the same V8, and the likeliest causes are that no experiment
+# groups are applied here and that nothing is fetching or syncing in the
+# background while the benchmark runs. Both repeat to within a percent.
+#
+# motionmark was measured and is deliberately not quoted. See utils/bench.py:
+# it depends on which overlapping window Windows presents, and the baseline
+# swung from 498 to 27 across three runs while ours held steady.
 #
 # There is nothing further to gain from gn arguments here. Anything beyond this
 # has to come from measurement, not flags.

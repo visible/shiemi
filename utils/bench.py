@@ -18,6 +18,15 @@ someone re-running them.
 A full web suite against two binaries runs for hours, so progress is flushed
 as it happens. Redirected into a file, block buffering would otherwise hold
 every line until the end and make a working run look hung.
+
+motionmark is not comparable as run here and its delta must not be quoted.
+It measures how much animation survives at the display's refresh rate, and
+these windows overlap each other rather than being brought to the front, so
+what it reports depends on which one Windows chose to present. One binary
+held 1930 within ten points across three runs while the other went 498, 27,
+28 on the same machine with the same hardware D3D11 renderer. Fix the window
+handling before reading anything into that number. speedometer and jetstream
+do not depend on presentation and repeat to within a percent.
 """
 
 import argparse
