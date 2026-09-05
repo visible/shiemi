@@ -3,6 +3,7 @@
 
   python3 utils/check_codecs.py
   python3 utils/check_codecs.py --out-dir release
+  python3 utils/check_codecs.py --binary "%LOCALAPPDATA%/Shiemi/Application/chrome.exe"
 
 Asks the binary itself rather than reading the build flags, because the
 question is whether video plays, and the flags are two steps removed from
@@ -78,10 +79,16 @@ def probe(binary: Path, port: int) -> dict:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--out-dir", default="baseline")
+    # A build directory is the usual target, but the codecs that matter are
+    # licensed ones that a GN argument decides, so the artifact a user ends up
+    # with is the one worth asking. Every other gate takes --binary.
+    parser.add_argument("--binary", type=Path,
+                        help="a browser anywhere, instead of --out-dir")
     parser.add_argument("--port", type=int, default=9401)
     args = parser.parse_args()
 
-    binary = config.require_src() / "out" / args.out_dir / "chrome.exe"
+    binary = args.binary or (config.require_src() / "out" / args.out_dir
+                             / "chrome.exe")
     if not binary.is_file():
         raise SystemExit(f"no binary at {binary}")
 
