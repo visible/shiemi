@@ -100,3 +100,16 @@ index f29a8228fe611..3c3b14f0a0c07 100644
          .tracing_service_iid = {0xa3fd580a,
                                  0xffd4,
                                  0x4075,
+diff --git a/chrome/installer/setup/generate_visual_elements_manifest_work_item.cc b/chrome/installer/setup/generate_visual_elements_manifest_work_item.cc
+index 1683b08552ba3..de954ddbe3534 100644
+--- a/chrome/installer/setup/generate_visual_elements_manifest_work_item.cc
++++ b/chrome/installer/setup/generate_visual_elements_manifest_work_item.cc
+@@ -31,7 +31,7 @@ std::string GenerateVisualElementsManifest(const base::Version& version) {
+       "      Square70x70Logo='%s\\SmallLogo%s.png'\r\n"
+       "      Square44x44Logo='%s\\SmallLogo%s.png'\r\n"
+       "      ForegroundText='light'\r\n"
+-      "      BackgroundColor='#5F6368'/>\r\n"
++      "      BackgroundColor='#d2703f'/>\r\n"
+       "</Application>\r\n";
+ 
+   // Construct the relative path to the versioned VisualElements directory.

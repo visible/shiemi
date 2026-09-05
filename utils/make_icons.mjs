@@ -42,6 +42,17 @@ const SCALED = {
   default_200_percent: { 16: 32, 32: 64 },
 }
 
+// Start-menu tile art, at upstream's dimensions so the overlay is like for
+// like. Windows fills the tile with BackgroundColor and draws the product name
+// across the bottom of the 150, so these carry the mark alone with no plate,
+// and the large one sits above centre to stay clear of the name. Upstream's
+// inset is looser than this, but its mark is a solid disc; six thin petals at
+// that size read as a small asterisk.
+const TILES = {
+  'Logo.png': { canvas: 600, mark: 320, rise: 40 },
+  'SmallLogo.png': { canvas: 176, mark: 140, rise: 0 },
+}
+
 // Chromium draws the product logo from .icon files in four separate targets,
 // each declaring its own canvas. Keys mirror the Chromium tree so the overlay in
 // utils/build.py can copy by relative path with no lookup table of its own.
@@ -153,6 +164,27 @@ for (const [density, logos] of Object.entries(SCALED)) {
     await writeFile(path.join(OUT, density, `product_logo_${name}.png`), data)
     report(`${density}/product_logo_${name}.png`, data.length)
   }
+}
+
+await mkdir(path.join(OUT, 'win', 'tiles'), { recursive: true })
+for (const [name, { canvas, mark, rise }] of Object.entries(TILES)) {
+  const glyph = await draw(mark, { colour: MARK, plate: null })
+    .png()
+    .toBuffer()
+  const inset = Math.round((canvas - mark) / 2)
+  const data = await sharp({
+    create: {
+      width: canvas,
+      height: canvas,
+      channels: 4,
+      background: { r: 0, g: 0, b: 0, alpha: 0 },
+    },
+  })
+    .composite([{ input: glyph, left: inset, top: inset - rise }])
+    .png({ compressionLevel: 9 })
+    .toBuffer()
+  await writeFile(path.join(OUT, 'win', 'tiles', name), data)
+  report(`win/tiles/${name}`, data.length)
 }
 
 // Tray and status surfaces composite a single-colour mark themselves, so the

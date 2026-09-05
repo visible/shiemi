@@ -59,6 +59,12 @@ def branded_paths() -> dict:
         for p in sorted((icons / "win").glob("*.ico")):
             owned[f"{theme}/win/{p.name}"] = p
 
+        # Start-menu tile art. The installer copies these out of the build to
+        # the install directory, so leaving them is a Chromium logo sitting on
+        # the user's Start menu.
+        for p in sorted((icons / "win" / "tiles").glob("*.png")):
+            owned[f"{theme}/win/tiles/{p.name}"] = p
+
         # The logo WebUI draws is a chrome_scaled_image, which resolves under
         # the density directories rather than the flat theme one, so it needs
         # its own copy or chrome://theme/current-channel-logo keeps serving
