@@ -1,5 +1,5 @@
 diff --git a/chrome/browser/resources/new_tab_page_third_party/new_tab_page_third_party.html b/chrome/browser/resources/new_tab_page_third_party/new_tab_page_third_party.html
-index 6332e7cd39fad..81412d506b5bd 100644
+index 6332e7cd39fad..72ac6cc2bcabb 100644
 --- a/chrome/browser/resources/new_tab_page_third_party/new_tab_page_third_party.html
 +++ b/chrome/browser/resources/new_tab_page_third_party/new_tab_page_third_party.html
 @@ -4,10 +4,14 @@
@@ -148,7 +148,7 @@ index 6332e7cd39fad..81412d506b5bd 100644
 +        <ul>
 +          <li>Search goes to DuckDuckGo</li>
 +          <li>No telemetry, no sign-in, nothing phoned home</li>
-+          <li>Content blockers still work</li>
++          <li>uBlock Origin is already on, and yours to remove</li>
 +          <li>Hold Shift on fullscreen to keep video in the window</li>
 +        </ul>
 +        <button id="dismiss">Start browsing</button>
