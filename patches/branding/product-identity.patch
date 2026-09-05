@@ -21,7 +21,7 @@ index f8363d5b294fe..7f7fb1f27071b 100644
  MAC_CREATOR_CODE=Cr24
  MAC_TEAM_ID=
 diff --git a/chrome/install_static/chromium_install_modes.h b/chrome/install_static/chromium_install_modes.h
-index f29a8228fe611..0d94fbe00debb 100644
+index f29a8228fe611..3c3b14f0a0c07 100644
 --- a/chrome/install_static/chromium_install_modes.h
 +++ b/chrome/install_static/chromium_install_modes.h
 @@ -21,10 +21,10 @@ inline constexpr wchar_t kCompanyPathName[] = L"";
@@ -37,7 +37,7 @@ index f29a8228fe611..0d94fbe00debb 100644
  
  // Note: This list of indices must be kept in sync with the brand-specific
  // resource strings in chrome/installer/util/prebuild/create_string_rc.
-@@ -45,15 +45,15 @@ inline constexpr auto kInstallModes = std::to_array<InstallConstants>({
+@@ -45,39 +45,39 @@ inline constexpr auto kInstallModes = std::to_array<InstallConstants>({
          .logo_suffix = L"",  // No logo suffix for the primary install mode.
          .app_guid =
              L"",  // Empty app_guid since no integration with Google Update.
@@ -58,5 +58,45 @@ index f29a8228fe611..0d94fbe00debb 100644
 -            L"Chromium PDF Document",  // PDF ProgID description.
 +            L"Shiemi PDF Document",  // PDF ProgID description.
          .active_setup_guid =
-             L"{7D2B3E1D-D096-4594-9D8F-A6667F12E0AC}",  // Active Setup
+-            L"{7D2B3E1D-D096-4594-9D8F-A6667F12E0AC}",  // Active Setup
++            L"{69AC06F5-A727-4688-BD7C-151B24D4FF52}",  // Active Setup
                                                          // GUID.
+-        .toast_activator_clsid = {0x635EFA6F,
+-                                  0x08D6,
+-                                  0x4EC9,
+-                                  {0xBD, 0x14, 0x8A, 0x0F, 0xDE, 0x97, 0x51,
+-                                   0x59}},  // Toast Activator CLSID.
+-        .elevator_clsid = {0xD133B120,
+-                           0x6DB4,
+-                           0x4D6B,
+-                           {0x8B, 0xFE, 0x83, 0xBF, 0x8C, 0xA1, 0xB1,
+-                            0xB0}},  // Elevator CLSID.
++        .toast_activator_clsid = {0x620E7A31,
++                                  0xF1A1,
++                                  0x4BDD,
++                                  {0xB4, 0x43, 0x05, 0x56, 0xEE, 0x61, 0x3C,
++                                   0x55}},  // Toast Activator CLSID.
++        .elevator_clsid = {0xCF3DF096,
++                           0x53F5,
++                           0x4838,
++                           {0xB7, 0x68, 0x64, 0x15, 0xD0, 0xAB, 0xE2,
++                            0x0E}},  // Elevator CLSID.
+         .elevator_iid = {0xbb19a0e5,
+                          0xc6,
+                          0x4966,
+                          {0x94, 0xb2, 0x5a, 0xfe, 0xc6, 0xfe, 0xd9,
+                           0x3a}},  // IElevator IID and TypeLib
+         // {BB19A0E5-00C6-4966-94B2-5AFEC6FED93A}.
+-        .tracing_service_clsid = {0x83f69367,
+-                                  0x442d,
+-                                  0x447f,
+-                                  {0x8b, 0xcc, 0x0e, 0x3f, 0x97, 0xbe, 0x9c,
+-                                   0xf2}},  // SystemTraceSession CLSID.
++        .tracing_service_clsid = {0x4661a036,
++                                  0x9ecb,
++                                  0x4e4c,
++                                  {0x88, 0x19, 0xa0, 0x24, 0x60, 0x17, 0x3d,
++                                   0x69}},  // SystemTraceSession CLSID.
+         .tracing_service_iid = {0xa3fd580a,
+                                 0xffd4,
+                                 0x4075,
