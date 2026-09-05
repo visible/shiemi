@@ -1,8 +1,8 @@
 # Shipping build. Optimised for runtime, expensive to compile.
 #
-# gn resolves this configuration against Chromium 151, but it has not been
-# compiled end to end yet. PGO requires "checkout_pgo_profiles": True in the
-# .gclient custom_vars, followed by gclient runhooks, or gn fails outright.
+# Validated: this configuration builds and runs Chromium 151.0.7922.174 on
+# Windows. PGO requires "checkout_pgo_profiles": True in the .gclient
+# custom_vars, followed by gclient runhooks, or gn fails outright.
 
 is_debug = false
 is_component_build = false

@@ -44,3 +44,12 @@ enable_reporting = false
 # The remote desktop host. Nothing here drives it and it is not reachable from
 # the UI, so it is dead code that only widens the binary.
 enable_remoting = false
+
+# Also matches release.gn. Both default off in an unbranded build, and the
+# effect is not subtle: canPlayType on this build before setting them returned
+# nothing for avc1.42E01E and mp4a.40.2, so every H.264 or AAC stream on the
+# web failed here while playing normally in the shipped build. Any media
+# behaviour checked against a development build without these describes a
+# browser nobody gets.
+proprietary_codecs = true
+ffmpeg_branding = "Chrome"
