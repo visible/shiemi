@@ -21,6 +21,7 @@ import subprocess
 import sys
 
 import config
+import fetch_ublock
 import rebrand
 
 # Enough to keep a browser, an editor and a game responsive. Below normal
@@ -192,6 +193,26 @@ def install_defaults(out_dir) -> bool:
     return True
 
 
+def install_blocker(out_path) -> bool:
+    """Put the bundled blocker where the browser looks for external extensions.
+
+    DIR_EXTERNAL_EXTENSIONS is DIR_MODULE/extensions, which in a build tree is
+    the output directory itself, so a dev build reads it from here exactly as
+    an install reads it from the version directory.
+
+    "Extensions" rather than "extensions" because chrome.release already ships
+    Extensions\\*.* into the version dir, so naming it upstream's way means the
+    installer needs no patch to carry this. Windows does not care about the
+    case and neither does the lookup.
+
+    Before the build for the same reason as initial_preferences: the installer
+    archive is assembled out of this directory.
+    """
+    if not out_path.is_dir():
+        return False
+    return fetch_ublock.place(out_path / "Extensions")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -237,6 +258,10 @@ def main() -> int:
 
     if install_defaults(out_path):
         print("defaults initial_preferences copied beside the binary")
+
+    if install_blocker(out_path):
+        print(f"blocker  uBlock Origin {fetch_ublock.VERSION} staged in"
+              " Extensions/")
 
     rc = run(f"gn gen {out_dir}", src)
     if rc != 0:

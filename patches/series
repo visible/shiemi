@@ -10,7 +10,7 @@ branding/product-identity.patch
 branding/no-api-key-warning.patch
 branding/webui-product-icon.patch
 extensions/manifest-v2-support.patch
-extensions/no-registry-installs.patch
+extensions/external-extension-sources.patch
 privacy/trim-component-updater.patch
 privacy/https-component-downloads.patch
 privacy/no-network-time.patch

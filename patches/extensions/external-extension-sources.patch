@@ -1,5 +1,5 @@
 diff --git a/chrome/browser/extensions/external_provider_impl.cc b/chrome/browser/extensions/external_provider_impl.cc
-index 074cfef37f0b0..68e2d8424aef8 100644
+index 074cfef37f0b0..1f6ae128da814 100644
 --- a/chrome/browser/extensions/external_provider_impl.cc
 +++ b/chrome/browser/extensions/external_provider_impl.cc
 @@ -15,6 +15,7 @@
@@ -26,7 +26,7 @@ index 074cfef37f0b0..68e2d8424aef8 100644
  #if BUILDFLAG(IS_CHROMEOS)
  
  const char kCameraAppId[] = "hfhhnacclhffhdffklopdkcgdhifgngh";
-@@ -848,12 +858,14 @@ void ExternalProviderImpl::CreateExternalProviders(
+@@ -848,12 +858,36 @@ void ExternalProviderImpl::CreateExternalProviders(
          bundled_extension_creation_flags));
  #endif
  #if BUILDFLAG(IS_WIN)
@@ -44,6 +44,28 @@ index 074cfef37f0b0..68e2d8424aef8 100644
 +      registry_provider->set_allow_updates(true);
 +      provider_list->push_back(std::move(registry_provider));
 +    }
++
++    // The content blocker that ships with the browser. Upstream builds this
++    // provider on every platform but Windows, where the registry above was the
++    // only external source; that leaves nowhere for a bundled extension to be
++    // declared. DIR_EXTERNAL_EXTENSIONS sits beside chrome.dll under Program
++    // Files, which only an elevated installer can write, so it does not
++    // reopen the hole the registry was.
++    //
++    // Auto-acknowledged and flagged as a default install so it arrives enabled
++    // instead of sitting behind the "an extension was added" prompt, which is
++    // meant for extensions the user did not ask for. Uninstalling is recorded
++    // per profile, so removing it makes it stay gone.
++    auto bundled_provider = std::make_unique<ExternalProviderImpl>(
++        service,
++        base::MakeRefCounted<ExternalPrefLoader>(
++            chrome::DIR_EXTERNAL_EXTENSIONS, ExternalPrefLoader::NONE,
++            nullptr),
++        profile, ManifestLocation::kExternalPref,
++        ManifestLocation::kExternalPrefDownload,
++        Extension::WAS_INSTALLED_BY_DEFAULT);
++    bundled_provider->set_auto_acknowledge(true);
++    provider_list->push_back(std::move(bundled_provider));
  #else
      provider_list->push_back(std::make_unique<ExternalProviderImpl>(
          service,

@@ -16,6 +16,17 @@ obligation: the binary has to be accompanied by the complete corresponding
 source. This repository plus the version pinned in chromium_version.txt is
 that source, which is why the pin has to stay honest.
 
+uBlock Origin
+  https://github.com/gorhill/uBlock
+  Copyright Raymond Hill (gorhill)
+  GPL-3.0
+
+Shipped with the browser as a bundled extension, and shipped unmodified: the
+file is the signed release from the URL above, pinned by checksum in
+utils/fetch_ublock.py. Nothing here repacks or alters it, and its own
+LICENSE.txt travels inside the package. GPL-3.0 either way, so the terms match
+this project's.
+
 Patches under patches/ that are original to this project are GPL-3.0. Any
 patch adapted from another project keeps its original licence and must be
 listed below with its source and terms. Removing attribution to keep branding

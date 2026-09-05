@@ -12,6 +12,10 @@ __pycache__/
 
 # Installers package.py produces. They belong on a release, not in git.
 dist/
+
+# Downloads fetch_ublock.py keeps between builds. A build input, pinned by
+# checksum in the script, so nothing is lost by refetching it.
+.cache/
 .env*
 node_modules/
 .next/
