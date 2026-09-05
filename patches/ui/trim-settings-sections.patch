@@ -55,3 +55,67 @@ index feff9bdf64552..d0baac4e3040e 100644
    }
  
    // <if expr="not is_chromeos">
+diff --git a/chrome/browser/resources/settings/privacy_page/privacy_page_index.ts b/chrome/browser/resources/settings/privacy_page/privacy_page_index.ts
+index 30e6533823b2a..d1dd02b2b4569 100644
+--- a/chrome/browser/resources/settings/privacy_page/privacy_page_index.ts
++++ b/chrome/browser/resources/settings/privacy_page/privacy_page_index.ts
+@@ -30,11 +30,7 @@ import type {PrivacyGuideBrowserProxy} from './privacy_guide/privacy_guide_brows
+ import {MAX_PRIVACY_GUIDE_PROMO_IMPRESSION, PrivacyGuideBrowserProxyImpl} from './privacy_guide/privacy_guide_browser_proxy.js';
+ import {getTemplate} from './privacy_page_index.html.js';
+ 
+-// clang-format off
+-// <if expr="is_chromeos">
+ import {getTopLevelRoute} from '../route.js';
+-// </if>
+-// clang-format on
+ 
+ 
+ export interface SettingsPrivacyPageIndexElement {
+@@ -261,13 +257,12 @@ export class SettingsPrivacyPageIndexElement extends
+       case routes.PRIVACY:
+         return this.getDefaultViews_();
+       case routes.BASIC:
+-        // <if expr="is_chromeos">
++        // Reached whenever the top level route is Privacy, which upstream only
++        // arranges for CrOS guest mode but is now the desktop default too: the
++        // people section is hidden, so getTopLevelRoute cannot return it.
+         if (getTopLevelRoute() === routes.PRIVACY) {
+-          // On CrOS guest mode the "Privacy" section should be displayed when
+-          // on chrome://settings/.
+           return this.getDefaultViews_();
+         }
+-        // </if>
+ 
+         // Display the default views if in search mode, since they could be part
+         // of search results.
+@@ -356,14 +351,10 @@ export class SettingsPrivacyPageIndexElement extends
+   }
+ 
+   private renderPrivacyView_(): boolean {
+-    // <if expr="is_chromeos">
+     if (getTopLevelRoute() === routes.PRIVACY &&
+         this.currentRoute === routes.BASIC) {
+-      // On CrOS guest mode the "Privacy" section should be displayed when
+-      // on chrome://settings/.
+       return true;
+     }
+-    // </if>
+ 
+     return this.inSearchMode ||
+         (!!this.currentRoute &&
+diff --git a/chrome/browser/resources/settings/route.ts b/chrome/browser/resources/settings/route.ts
+index 7770eeb7d2406..916d1144aeffb 100644
+--- a/chrome/browser/resources/settings/route.ts
++++ b/chrome/browser/resources/settings/route.ts
+@@ -365,7 +365,10 @@ export let routes: SettingsRoutes = Router.getInstance().getRoutes();
+ // Returns the "effective" route when at chrome://settings/.
+ export function getTopLevelRoute(): Route {
+   if (!loadTimeData.getBoolean('isGuest')) {
+-    return routes.PEOPLE;
++    // Was routes.PEOPLE, which createRoutes no longer builds because the
++    // people section is hidden. Undefined here leaves chrome://settings/ with
++    // an empty content pane and no error anywhere the user can see.
++    return routes.PRIVACY;
+   }
+ 
+   let guestTopLevelRoute = routes.SEARCH;
