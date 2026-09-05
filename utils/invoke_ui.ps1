@@ -26,6 +26,7 @@ param(
   [ValidateSet('Button', 'MenuItem', 'Any')][string]$Role = 'Button',
   [switch]$List,
   [switch]$Click,
+  [switch]$AllWindows,
   [int]$TimeoutSeconds = 20
 )
 
@@ -43,17 +44,14 @@ $A = [System.Windows.Automation.AutomationElement]
 $Condition = [System.Windows.Automation.PropertyCondition]
 $Scope = [System.Windows.Automation.TreeScope]::Descendants
 
-function Get-BrowserWindow([int]$processId) {
+function Get-BrowserWindows([int]$processId) {
   $byPid = New-Object $Condition ($A::ProcessIdProperty, $processId)
   $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
   while ((Get-Date) -lt $deadline) {
-    $windows = $A::RootElement.FindAll(
-      [System.Windows.Automation.TreeScope]::Children, $byPid)
-    foreach ($w in $windows) {
-      if ($w.Current.ControlType.ProgrammaticName -eq 'ControlType.Window') {
-        return $w
-      }
-    }
+    $windows = @($A::RootElement.FindAll(
+      [System.Windows.Automation.TreeScope]::Children, $byPid) |
+      Where-Object { $_.Current.ControlType.ProgrammaticName -eq 'ControlType.Window' })
+    if ($windows.Count -gt 0) { return $windows }
     Start-Sleep -Milliseconds 200
   }
   throw "no window for process $processId"
@@ -67,14 +65,23 @@ function Get-Controls($window) {
   return $window.FindAll($Scope, (New-Object $Condition ($A::ControlTypeProperty, $type)))
 }
 
-$window = Get-BrowserWindow $Id
+# An open menu is its own top-level window, so listing what a menu contains
+# means looking wider than the browser window that opened it.
+$windows = Get-BrowserWindows $Id
+$window = $windows[0]
+
+function Get-AllControls {
+  $found = @()
+  foreach ($w in Get-BrowserWindows $Id) { $found += @(Get-Controls $w) }
+  return $found
+}
 
 # The tree is empty until accessibility spins up, and the count grows for a
 # moment after that, so wait for it to settle rather than for a fixed delay.
 $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
 $previous = -1
 while ((Get-Date) -lt $deadline) {
-  $controls = Get-Controls $window
+  $controls = if ($AllWindows) { Get-AllControls } else { @(Get-Controls $window) }
   if ($controls.Count -gt 0 -and $controls.Count -eq $previous) { break }
   $previous = $controls.Count
   Start-Sleep -Milliseconds 300
